@@ -11,8 +11,19 @@ from .auth import (
     UserWithProfileSerializer
 )
 
-# Import instrument serializers
-from .instrument_serializers import InstrumentSerializer
+# Import RFID serializers
+from .rfid_reader_serializer import RFIDReaderSerializer
+from .rfid_tag_serializer import RFIDTagSerializer, RFIDTagCreateUpdateSerializer
+
+# Import equipment serializers
+from .tray_serializer import TraySerializer
+from .instrument_serializer import InstrumentSerializer
+from .large_equipment_serializer import LargeEquipmentSerializer
+
+# Import operation serializers
+from .operation_type_serializer import OperationTypeSerializer
+from .operation_room_serializer import OperationRoomSerializer
+from .operation_session_serializer import OperationSessionListSerializer, OperationSessionDetailSerializer
 
 __all__ = [
     # Authentication serializers
@@ -21,6 +32,19 @@ __all__ = [
     'UserProfileSerializer',
     'UserWithProfileSerializer',
     
+    # RFID serializers
+    'RFIDReaderSerializer',
+    'RFIDTagSerializer',
+    'RFIDTagCreateUpdateSerializer',
+    
     # Equipment serializers
+    'TraySerializer',
     'InstrumentSerializer',
+    'LargeEquipmentSerializer',
+    
+    # Operation serializers
+    'OperationTypeSerializer',
+    'OperationRoomSerializer',
+    'OperationSessionListSerializer',
+    'OperationSessionDetailSerializer',
 ]
