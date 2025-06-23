@@ -1,94 +1,95 @@
 <div class="feature-container">
   <div class="feature-header">
-    <h1>Instruments Verification</h1>
-    <button class="btn btn-secondary" routerLink="/dashboard">Back to Dashboard</button>
+    <div class="title-area">
+      <div class="page-title">
+        <span class="feature-icon"><i class="fas fa-clipboard-check"></i></span>
+        <h1>Instruments Verification</h1>
+      </div>
+      <p class="breadcrumb">
+        <span class="crumb"><i class="fas fa-home"></i> Dashboard</span>
+        <span class="separator">></span>
+        <span class="crumb current">Instruments Verification</span>
+        <span class="surgery-badge" *ngIf="selectedSurgery">{{ selectedSurgery.name }}</span>
+      </p>
+    </div>
+    <div class="button-group">
+      <button class="btn btn-secondary" routerLink="/dashboard">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </button>
+    </div>
   </div>
   
   <div class="feature-content">
+    <!-- Surgery selection UI is now hidden since this is handled in dashboard -->
     <div class="surgery-selector" *ngIf="!selectedSurgery">
-      <h2>Select Surgery</h2>
-      <p>Choose a surgery from the list below to verify instruments:</p>
-      
-      <div class="surgery-list">
-        <div 
-          class="surgery-card" 
-          *ngFor="let surgery of surgeries"
-          (click)="selectSurgery(surgery)"
-        >
-          <h3>{{ surgery.name }}</h3>
-          <p>{{ surgery.description }}</p>
+      <div class="notification-card">
+        <div class="icon">ℹ️</div>
+        <div class="message">
+          <h3>No Surgery Selected</h3>
+          <p>Please return to the dashboard and select a surgery to continue.</p>
+          <button class="btn btn-primary" routerLink="/dashboard">Go to Dashboard</button>
         </div>
       </div>
     </div>
     
     <div class="surgery-details" *ngIf="selectedSurgery">
       <div class="surgery-header">
-        <h2>{{ selectedSurgery.name }}</h2>
-        <button class="btn btn-outline" (click)="selectSurgery(null)">Change Surgery</button>
-      </div>
-      
-      <div class="instruments-section">
-        <h3>Required Instruments</h3>
-        <div class="table-container">
-          <table class="instruments-table">
-            <thead>
-              <tr>
-                <th>Instrument Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let instrument of selectedSurgery.requiredInstruments">
-                <td>{{ instrument.name }}</td>
-                <td [ngClass]="{'status-present': instrument.inRoom, 'status-missing': !instrument.inRoom}">
-                  {{ instrument.inRoom ? 'IN ROOM' : 'NOT IN ROOM' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="surgery-info">
+          <h2>{{ selectedSurgery.name }}</h2>
+          <p>{{ selectedSurgery.description }}</p>
         </div>
+        <button class="btn btn-outline" routerLink="/dashboard">Change Surgery</button>
       </div>
       
-      <div class="instruments-section">
-        <h3>Missing Instruments</h3>
-        <div class="table-container">
-          <table class="instruments-table" *ngIf="getInstrumentsNotInRoom().length > 0">
-            <thead>
-              <tr>
-                <th>Instrument Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let instrument of getInstrumentsNotInRoom()">
-                <td>{{ instrument.name }}</td>
-                <td class="status-missing">NOT IN ROOM</td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="empty-message" *ngIf="getInstrumentsNotInRoom().length === 0">
-            <p>All required instruments are present in the room.</p>
+      <!-- All tables in one compact layout -->
+      <div class="instruments-dashboard">
+        <!-- Summary stats at the top -->
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-number">{{ selectedSurgery.requiredInstruments.length }}</div>
+            <div class="stat-label">Total Instruments</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-number">{{ getInstrumentsInRoom().length }}</div>
+            <div class="stat-label">In Room</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-number">{{ getInstrumentsNotInRoom().length }}</div>
+            <div class="stat-label">Missing</div>
           </div>
         </div>
-      </div>
-      
-      <div class="instruments-section">
-        <h3>Available Instruments</h3>
-        <div class="table-container">
-          <table class="instruments-table">
-            <thead>
-              <tr>
-                <th>Instrument Name</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let instrument of getInstrumentsInRoom()">
-                <td>{{ instrument.name }}</td>
-                <td class="status-present">IN ROOM</td>
-              </tr>
-            </tbody>
-          </table>
+        
+        <!-- Status indicator -->
+        <div class="status-indicator" [class.complete]="getInstrumentsNotInRoom().length === 0">
+          <div class="indicator-icon">{{ getInstrumentsNotInRoom().length === 0 ? '✓' : '⚠️' }}</div>
+          <div class="indicator-text">
+            {{ getInstrumentsNotInRoom().length === 0 ? 'All instruments verified' : 'Missing instruments' }}
+          </div>
+        </div>
+        
+        <!-- All instruments in one compact table -->
+        <div class="table-section">
+          <h3>Instrument Verification List</h3>
+          <div class="table-container compact">
+            <table class="instruments-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Instrument Name</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let instrument of selectedSurgery.requiredInstruments">
+                  <td class="id-column">{{ instrument.id }}</td>
+                  <td>{{ instrument.name }}</td>
+                  <td [ngClass]="{'status-present': instrument.inRoom, 'status-missing': !instrument.inRoom}">
+                    {{ instrument.inRoom ? 'VERIFIED ✓' : 'MISSING ⚠️' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

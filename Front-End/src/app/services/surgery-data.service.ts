@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of, delay, tap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface Instrument {
   id: number;
@@ -11,6 +13,8 @@ export interface Surgery {
   id: number;
   name: string;
   description: string;
+  status: 'scheduled' | 'ongoing' | 'completed';
+  scheduledTime?: string;
   requiredInstruments: Instrument[];
 }
 
@@ -18,15 +22,23 @@ export interface Surgery {
   providedIn: 'root'
 })
 export class SurgeryDataService {
-  private surgeries: Surgery[];
+  private surgeriesSubject = new BehaviorSubject<Surgery[]>([]);
   private selectedSurgerySubject = new BehaviorSubject<Surgery | null>(null);
+  private surgeries: Surgery[] = [];
+  private simulationMode = true; // Toggle between real API and simulation
 
-  constructor() {
-    this.surgeries = [
+  constructor(private http: HttpClient) {
+    // Initialize with mock data
+    this.loadSurgeries();
+  }
+  
+  private mockSurgeries: Surgery[] = [
       {
         id: 1,
         name: 'Appendectomy',
         description: 'Surgical removal of the appendix',
+        status: 'ongoing',
+        scheduledTime: '2023-11-15T09:30:00',
         requiredInstruments: [
           { id: 101, name: 'Scalpel handle', inRoom: true },
           { id: 102, name: 'Metzenbaum scissors', inRoom: true },
@@ -52,6 +64,8 @@ export class SurgeryDataService {
         id: 2,
         name: 'Cesarean Section (C-Section)',
         description: 'Surgical delivery of a baby',
+        status: 'scheduled',
+        scheduledTime: '2023-11-16T10:15:00',
         requiredInstruments: [
           { id: 201, name: 'Scalpel handle', inRoom: true },
           { id: 202, name: 'Mayo scissors', inRoom: false },
@@ -77,6 +91,8 @@ export class SurgeryDataService {
         id: 3,
         name: 'Total Knee Replacement (TKR)',
         description: 'Surgical replacement of the knee joint',
+        status: 'scheduled',
+        scheduledTime: '2023-11-15T14:00:00',
         requiredInstruments: [
           { id: 301, name: 'Oscillating saw handpiece', inRoom: true },
           { id: 302, name: 'Bone saw blades', inRoom: false },
@@ -105,14 +121,51 @@ export class SurgeryDataService {
         ]
       }
     ];
+  
+  // Load surgeries either from API or mock data
+  loadSurgeries(): void {
+    if (this.simulationMode) {
+      this.simulateApiCall().subscribe(surgeries => {
+        this.surgeries = surgeries;
+        this.surgeriesSubject.next(surgeries);
+      });
+    } else {
+      // Real API implementation
+      this.http.get<Surgery[]>(`${environment.apiUrl}/surgeries`).subscribe(surgeries => {
+        this.surgeries = surgeries;
+        this.surgeriesSubject.next(surgeries);
+      }, error => {
+        console.error('Error fetching surgeries:', error);
+        // Fallback to mock data if API fails
+        this.simulateApiCall().subscribe(surgeries => {
+          this.surgeries = surgeries;
+          this.surgeriesSubject.next(surgeries);
+        });
+      });
+    }
+  }
+  
+  // Simulate API call with mock data
+  private simulateApiCall(): Observable<Surgery[]> {
+    return of(this.mockSurgeries).pipe(
+      delay(600), // Simulate network delay
+      tap(() => console.log('Simulated API call completed'))
+    );
   }
 
-  getAllSurgeries(): Surgery[] {
-    return [...this.surgeries];
+  getAllSurgeries(): Observable<Surgery[]> {
+    return this.surgeriesSubject.asObservable();
+  }
+  
+  getSurgeriesByStatus(status: 'scheduled' | 'ongoing' | 'completed'): Observable<Surgery[]> {
+    return of(this.surgeries.filter(surgery => surgery.status === status)).pipe(
+      delay(300) // Simulate small network delay
+    );
   }
 
-  getSurgeryById(id: number): Surgery | undefined {
-    return this.surgeries.find(surgery => surgery.id === id);
+  getSurgeryById(id: number): Observable<Surgery | undefined> {
+    const surgery = this.surgeries.find(surgery => surgery.id === id);
+    return of(surgery).pipe(delay(300)); // Simulate network delay
   }
 
   setSelectedSurgery(surgery: Surgery | null): void {
