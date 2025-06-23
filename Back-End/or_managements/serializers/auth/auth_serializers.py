@@ -25,7 +25,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             password=validated_data['password'],
-            is_active=False  # Set user as inactive until admin approval
+            is_active=True  # Auto-activate users for now, admin approval flow will be implemented later
         )
         
         # Update the user's profile with the role
