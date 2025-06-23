@@ -1,0 +1,28 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>OR Staff Dashboard</h2>
+    <button class="logout-btn" (click)="logout()">Logout</button>
+  </div>
+  
+  <div class="dashboard-content">
+    <h3>Welcome to the OR Staff Dashboard</h3>
+    <p>Select a feature below to get started:</p>
+    
+    <div class="feature-cards">
+      <div class="feature-card" (click)="navigateToFeature('instruments-verification')">
+        <h4>Instruments Verification</h4>
+        <p>Verify and track surgical instruments</p>
+      </div>
+      
+      <div class="feature-card" (click)="navigateToFeature('outbound-tracking')">
+        <h4>Outbound Tracking</h4>
+        <p>Track outbound shipments and transfers</p>
+      </div>
+      
+      <div class="feature-card" (click)="navigateToFeature('equipment-tracking')">
+        <h4>Large Equipment Tracking</h4>
+        <p>Monitor and track large equipment status</p>
+      </div>
+    </div>
+  </div>
+</div>

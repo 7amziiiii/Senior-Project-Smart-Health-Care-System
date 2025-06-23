@@ -1,0 +1,96 @@
+<div class="feature-container">
+  <div class="feature-header">
+    <h1>Instruments Verification</h1>
+    <button class="btn btn-secondary" routerLink="/dashboard">Back to Dashboard</button>
+  </div>
+  
+  <div class="feature-content">
+    <div class="surgery-selector" *ngIf="!selectedSurgery">
+      <h2>Select Surgery</h2>
+      <p>Choose a surgery from the list below to verify instruments:</p>
+      
+      <div class="surgery-list">
+        <div 
+          class="surgery-card" 
+          *ngFor="let surgery of surgeries"
+          (click)="selectSurgery(surgery)"
+        >
+          <h3>{{ surgery.name }}</h3>
+          <p>{{ surgery.description }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="surgery-details" *ngIf="selectedSurgery">
+      <div class="surgery-header">
+        <h2>{{ selectedSurgery.name }}</h2>
+        <button class="btn btn-outline" (click)="selectSurgery(null)">Change Surgery</button>
+      </div>
+      
+      <div class="instruments-section">
+        <h3>Required Instruments</h3>
+        <div class="table-container">
+          <table class="instruments-table">
+            <thead>
+              <tr>
+                <th>Instrument Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let instrument of selectedSurgery.requiredInstruments">
+                <td>{{ instrument.name }}</td>
+                <td [ngClass]="{'status-present': instrument.inRoom, 'status-missing': !instrument.inRoom}">
+                  {{ instrument.inRoom ? 'IN ROOM' : 'NOT IN ROOM' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="instruments-section">
+        <h3>Missing Instruments</h3>
+        <div class="table-container">
+          <table class="instruments-table" *ngIf="getInstrumentsNotInRoom().length > 0">
+            <thead>
+              <tr>
+                <th>Instrument Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let instrument of getInstrumentsNotInRoom()">
+                <td>{{ instrument.name }}</td>
+                <td class="status-missing">NOT IN ROOM</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="empty-message" *ngIf="getInstrumentsNotInRoom().length === 0">
+            <p>All required instruments are present in the room.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="instruments-section">
+        <h3>Available Instruments</h3>
+        <div class="table-container">
+          <table class="instruments-table">
+            <thead>
+              <tr>
+                <th>Instrument Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let instrument of getInstrumentsInRoom()">
+                <td>{{ instrument.name }}</td>
+                <td class="status-present">IN ROOM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
