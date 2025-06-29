@@ -34,28 +34,7 @@ class OperationSessionDetailSerializer(serializers.ModelSerializer):
     """
     Detailed serializer for operation sessions
     """
-    operation_type = OperationTypeSerializer(read_only=True)
-    operation_type_id = serializers.PrimaryKeyRelatedField(
-        queryset=OperationType.objects.all(),
-        source='operation_type',
-        write_only=True
-    )
-    
-    operation_room = OperationRoomSerializer(read_only=True)
-    operation_room_id = serializers.PrimaryKeyRelatedField(
-        queryset=OperationRoom.objects.all(),
-        source='operation_room',
-        write_only=True
-    )
-    
-    users = UserWithProfileSerializer(many=True, read_only=True)
-    user_ids = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        source='users',
-        write_only=True,
-        many=True
-    )
-    
+
     state_display = serializers.CharField(source='get_state_display', read_only=True)
     
     class Meta:

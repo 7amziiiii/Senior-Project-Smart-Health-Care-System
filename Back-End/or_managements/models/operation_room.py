@@ -16,6 +16,7 @@ class OperationRoom(models.Model):
         ],
         default='available'
     )
+    reader = models.ForeignKey('RFID_Reader', on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

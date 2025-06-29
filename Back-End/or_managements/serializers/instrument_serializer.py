@@ -9,8 +9,7 @@ class InstrumentSerializer(serializers.ModelSerializer):
     """
     Serializer for surgical instruments
     """
-    rfid_tag = RFIDTagSerializer(read_only=True)
-    tray = TraySerializer(read_only=True)
+
     tray_id = serializers.PrimaryKeyRelatedField(
         queryset=Tray.objects.all(),
         source='tray',

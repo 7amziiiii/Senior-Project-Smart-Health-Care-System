@@ -7,7 +7,6 @@ class LargeEquipmentSerializer(serializers.ModelSerializer):
     """
     Serializer for large medical equipment
     """
-    rfid_tag = RFIDTagSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:

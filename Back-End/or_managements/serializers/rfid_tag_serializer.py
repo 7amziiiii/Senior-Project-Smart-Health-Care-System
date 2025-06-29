@@ -12,7 +12,7 @@ class RFIDTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = RFIDTag
         fields = [
-            'id', 'tag_id', 'name', 'status', 'last_detected_by',
+            'id', 'tag_id', 'status', 'last_detected_by',
             'last_detection_time', 'created_at', 'updated_at', 'last_known_location'
         ]
         read_only_fields = ['created_at', 'updated_at']
@@ -24,4 +24,4 @@ class RFIDTagCreateUpdateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = RFIDTag
-        fields = ['tag_id', 'name', 'status', 'last_detected_by']
+        fields = '__all__'

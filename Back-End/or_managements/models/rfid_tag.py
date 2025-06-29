@@ -4,7 +4,6 @@ from django.utils import timezone
 
 class RFIDTag(models.Model):
     tag_id = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=100)
     status = models.CharField(max_length=50, choices=[
         ('active', 'Active'),
         ('inactive', 'Inactive'),
@@ -24,4 +23,4 @@ class RFIDTag(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.name} ({self.tag_id})"
+        return f"{self.tag_id}"
