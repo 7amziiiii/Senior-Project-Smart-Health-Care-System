@@ -12,3 +12,4 @@ from .operation_session import OperationSession
 from .instrument import Instrument
 from .tray import Tray
 from .large_equipment import LargeEquipment
+from .verification_session import VerificationSession

@@ -3,6 +3,8 @@ URL configuration for or_managements app.
 """
 from django.urls import path, include
 from rest_framework import routers
+
+# Import authentication views
 from .views import (
     RegisterView,
     LoginView,
@@ -12,8 +14,43 @@ from .views import (
     UserProfileView
 )
 
+# Import model views
+from .views.operation_types.operation_type_views import (
+    OperationTypeListCreateView, 
+    OperationTypeRetrieveUpdateDestroyView
+)
+from .views.rfid_readers.rfid_reader_views import (
+    RFIDReaderListCreateView, 
+    RFIDReaderRetrieveUpdateDestroyView
+)
+from .views.rfid_tags.rfid_tag_views import (
+    RFIDTagListCreateView, 
+    RFIDTagRetrieveUpdateDestroyView
+)
+from .views.operation_rooms.operation_room_views import (
+    OperationRoomListCreateView, 
+    OperationRoomRetrieveUpdateDestroyView
+)
+from .views.operation_sessions.operation_session_views import (
+    OperationSessionListCreateView, 
+    OperationSessionRetrieveUpdateDestroyView
+)
+from .views.instruments.instrument_views import (
+    InstrumentListCreateView, 
+    InstrumentRetrieveUpdateDestroyView
+)
+from .views.large_equipment.large_equipment_views import (
+    LargeEquipmentListCreateView, 
+    LargeEquipmentRetrieveUpdateDestroyView
+)
+from .views.trays.tray_views import (
+    TrayListCreateView, 
+    TrayRetrieveUpdateDestroyView
+)
+
+
 # Router for API endpoints
-router = routers.DefaultRouter()
+# router = routers.DefaultRouter()
 
 # URL patterns for the app
 urlpatterns = [
@@ -25,6 +62,39 @@ urlpatterns = [
     path('auth/users/<int:pk>/approve/', UserApprovalView.as_view(), name='approve-user'),
     path('auth/profile/', UserProfileView.as_view(), name='user-profile'),
     
+    # Operation Type URLs
+    path('api/operation-types/', OperationTypeListCreateView.as_view(), name='operation-type-list-create'),
+    path('api/operation-types/<int:pk>/', OperationTypeRetrieveUpdateDestroyView.as_view(), name='operation-type-detail'),
+    
+    # RFID Reader URLs
+    path('api/rfid-readers/', RFIDReaderListCreateView.as_view(), name='rfid-reader-list-create'),
+    path('api/rfid-readers/<int:pk>/', RFIDReaderRetrieveUpdateDestroyView.as_view(), name='rfid-reader-detail'),
+    
+    # RFID Tag URLs
+    path('api/rfid-tags/', RFIDTagListCreateView.as_view(), name='rfid-tag-list-create'),
+    path('api/rfid-tags/<int:pk>/', RFIDTagRetrieveUpdateDestroyView.as_view(), name='rfid-tag-detail'),
+    
+    # Operation Room URLs
+    path('api/operation-rooms/', OperationRoomListCreateView.as_view(), name='operation-room-list-create'),
+    path('api/operation-rooms/<int:pk>/', OperationRoomRetrieveUpdateDestroyView.as_view(), name='operation-room-detail'),
+    
+    # Operation Session URLs
+    path('api/operation-sessions/', OperationSessionListCreateView.as_view(), name='operation-session-list-create'),
+    path('api/operation-sessions/<int:pk>/', OperationSessionRetrieveUpdateDestroyView.as_view(), name='operation-session-detail'),
+    
+    # Instrument URLs
+    path('api/instruments/', InstrumentListCreateView.as_view(), name='instrument-list-create'),
+    path('api/instruments/<int:pk>/', InstrumentRetrieveUpdateDestroyView.as_view(), name='instrument-detail'),
+    
+    # Large Equipment URLs
+    path('api/large-equipment/', LargeEquipmentListCreateView.as_view(), name='large-equipment-list-create'),
+    path('api/large-equipment/<int:pk>/', LargeEquipmentRetrieveUpdateDestroyView.as_view(), name='large-equipment-detail'),
+    
+    # Tray URLs
+    path('api/trays/', TrayListCreateView.as_view(), name='tray-list-create'),
+    path('api/trays/<int:pk>/', TrayRetrieveUpdateDestroyView.as_view(), name='tray-detail'),
+    
+
     # Include router URLs
-    path('', include(router.urls)),
+    # path('', include(router.urls)),
 ]
