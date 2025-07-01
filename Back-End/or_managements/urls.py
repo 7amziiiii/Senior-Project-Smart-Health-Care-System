@@ -3,6 +3,7 @@ URL configuration for or_managements app.
 """
 from django.urls import path, include
 from rest_framework import routers
+from rest_framework.routers import DefaultRouter
 
 # Import authentication views
 from .views import (
@@ -47,10 +48,14 @@ from .views.trays.tray_views import (
     TrayListCreateView, 
     TrayRetrieveUpdateDestroyView
 )
+from .views.verification_views import VerificationViewSet
 
 
 # Router for API endpoints
-# router = routers.DefaultRouter()
+router = DefaultRouter()
+
+# Register viewsets
+router.register(r'verification', VerificationViewSet, basename='verification')
 
 # URL patterns for the app
 urlpatterns = [
@@ -95,6 +100,6 @@ urlpatterns = [
     path('api/trays/<int:pk>/', TrayRetrieveUpdateDestroyView.as_view(), name='tray-detail'),
     
 
-    # Include router URLs
-    # path('', include(router.urls)),
+    # Include router URLs for viewsets
+    path('api/', include(router.urls)),
 ]
