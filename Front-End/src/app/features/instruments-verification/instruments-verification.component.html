@@ -6,10 +6,7 @@
         <h1>Instruments Verification</h1>
       </div>
       <p class="breadcrumb">
-        <span class="crumb"><i class="fas fa-home"></i> Dashboard</span>
-        <span class="separator">></span>
-        <span class="crumb current">Instruments Verification</span>
-        <span class="surgery-badge" *ngIf="selectedSurgery">{{ selectedSurgery.name }}</span>
+        <a [routerLink]="['/dashboard']" class="back-link"><i class="fas fa-angle-left"></i> Back to Dashboard</a>
       </p>
     </div>
     <div class="button-group">
@@ -20,75 +17,78 @@
   </div>
   
   <div class="feature-content">
-    <!-- Surgery selection UI is now hidden since this is handled in dashboard -->
-    <div class="surgery-selector" *ngIf="!selectedSurgery">
-      <div class="notification-card">
-        <div class="icon">ℹ️</div>
-        <div class="message">
-          <h3>No Surgery Selected</h3>
-          <p>Please return to the dashboard and select a surgery to continue.</p>
-          <button class="btn btn-primary" routerLink="/dashboard">Go to Dashboard</button>
+    <div class="container">
+      <div class="header-section">
+        <h2>Instruments Verification</h2>
+        <span class="breadcrumb">
+          <a [routerLink]="['/dashboard']" class="back-link"><i class="fas fa-angle-left"></i> Back to Dashboard</a>
+        </span>
+      </div>
+
+      <div *ngIf="!selectedSurgery" class="surgery-selection">
+        <h3>Select a Surgery</h3>
+        <div class="surgery-list">
+          <div *ngFor="let surgery of surgeries" 
+              class="surgery-card" 
+              [class.ongoing]="surgery.status === 'ongoing'" 
+              [class.scheduled]="surgery.status === 'scheduled'"
+              (click)="selectSurgery(surgery)">
+            <h4>{{ surgery.name }}</h4>
+            <p>{{ surgery.scheduledTime | date:'medium' }}</p>
+            <p>Status: <span [ngClass]="{'ongoing-status': surgery.status === 'ongoing', 'scheduled-status': surgery.status === 'scheduled'}">{{ surgery.status }}</span></p>
+          </div>
         </div>
       </div>
-    </div>
-    
-    <div class="surgery-details" *ngIf="selectedSurgery">
-      <div class="surgery-header">
+
+      <div *ngIf="selectedSurgery" class="verification-container">
         <div class="surgery-info">
-          <h2>{{ selectedSurgery.name }}</h2>
-          <p>{{ selectedSurgery.description }}</p>
-        </div>
-        <button class="btn btn-outline" routerLink="/dashboard">Change Surgery</button>
-      </div>
-      
-      <!-- All tables in one compact layout -->
-      <div class="instruments-dashboard">
-        <!-- Summary stats at the top -->
-        <div class="stats-container">
-          <div class="stat-card">
-            <div class="stat-number">{{ selectedSurgery.requiredInstruments.length }}</div>
-            <div class="stat-label">Total Instruments</div>
-          </div>
-          <div class="stat-card success">
-            <div class="stat-number">{{ getInstrumentsInRoom().length }}</div>
-            <div class="stat-label">In Room</div>
-          </div>
-          <div class="stat-card danger">
-            <div class="stat-number">{{ getInstrumentsNotInRoom().length }}</div>
-            <div class="stat-label">Missing</div>
+          <h3>{{ selectedSurgery.name }}</h3>
+          <p>{{ selectedSurgery.scheduledTime | date:'medium' }}</p>
+          <p>Status: <span [ngClass]="{'ongoing-status': selectedSurgery.status === 'ongoing', 'scheduled-status': selectedSurgery.status === 'scheduled'}">{{ selectedSurgery.status }}</span></p>
+          <button (click)="selectSurgery(null)" class="back-btn"><i class="fas fa-angle-left"></i> Back to Surgery List</button>
+          
+          <!-- Verification Controls -->
+          <div class="verification-controls">
+            <button (click)="forceVerificationScan()" class="scan-btn">
+              <i class="fas fa-sync"></i> Force Scan
+            </button>
+            <div class="verification-status" *ngIf="verificationStatus">
+              <span class="status-label">Last Updated:</span>
+              <span class="status-value">{{ verificationStatus.last_updated | date:'medium' }}</span>
+            </div>
           </div>
         </div>
-        
-        <!-- Status indicator -->
-        <div class="status-indicator" [class.complete]="getInstrumentsNotInRoom().length === 0">
-          <div class="indicator-icon">{{ getInstrumentsNotInRoom().length === 0 ? '✓' : '⚠️' }}</div>
-          <div class="indicator-text">
-            {{ getInstrumentsNotInRoom().length === 0 ? 'All instruments verified' : 'Missing instruments' }}
-          </div>
+
+        <!-- Loading indicator -->
+        <div *ngIf="isVerifying && !verificationStatus" class="loading-indicator">
+          <p><i class="fas fa-spinner fa-spin"></i> Starting verification...</p>
         </div>
-        
-        <!-- All instruments in one compact table -->
-        <div class="table-section">
-          <h3>Instrument Verification List</h3>
-          <div class="table-container compact">
-            <table class="instruments-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Instrument Name</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let instrument of selectedSurgery.requiredInstruments">
-                  <td class="id-column">{{ instrument.id }}</td>
-                  <td>{{ instrument.name }}</td>
-                  <td [ngClass]="{'status-present': instrument.inRoom, 'status-missing': !instrument.inRoom}">
-                    {{ instrument.inRoom ? 'VERIFIED ✓' : 'MISSING ⚠️' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+
+        <!-- Real-time verification data -->
+        <div *ngIf="verificationStatus" class="summary-stats">
+          <div class="stat-box">
+            <h4>Verification Status</h4>
+            <p [ngClass]="{
+              'status-complete': verificationStatus.state === 'complete',
+              'status-incomplete': verificationStatus.state === 'incomplete',
+              'status-failed': verificationStatus.state === 'failed'
+            }">{{ verificationStatus.state | titlecase }}</p>
+          </div>
+          <div class="stat-box">
+            <h4>Instruments Used</h4>
+            <p>{{ getItemsCount('used', 'instruments') }}</p>
+          </div>
+          <div class="stat-box">
+            <h4>Missing</h4>
+            <p>{{ getItemsCount('missing', 'instruments') }}</p>
+          </div>
+          <div class="stat-box">
+            <h4>Extra</h4>
+            <p>{{ getItemsCount('extra', 'instruments') }}</p>
+          </div>
+          <div class="stat-box">
+            <h4>Available</h4>
+            <p>{{ getItemsCount('available', 'instruments') }}</p>
           </div>
         </div>
       </div>
