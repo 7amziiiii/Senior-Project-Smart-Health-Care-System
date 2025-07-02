@@ -22,12 +22,11 @@ class OperationSessionListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'operation_type', 'operation_room', 
             'scheduled_time', 'state', 'state_display',
-            'user_count', 'created_at', 'updated_at'
+             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
     
-    def get_user_count(self, obj):
-        return obj.users.count()
+
 
 
 class OperationSessionDetailSerializer(serializers.ModelSerializer):
@@ -42,7 +41,7 @@ class OperationSessionDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'operation_type', 'operation_type_id',
             'operation_room', 'operation_room_id',
-            'scheduled_time', 'users', 'user_ids',
+            'scheduled_time', 'users',
             'state', 'state_display', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

@@ -41,9 +41,10 @@ def scan_rfid_tags(port, baud_rate, duration, verbose=False):
     unique_tags = {}
     
     # Pattern for identifying EPC codes in YaoZeo reader output
-    # From screenshot: EPCs start with 035 and are exactly 24 chars (12 bytes)
-    # More precise pattern to avoid partial/overlapping matches
-    EPC_PATTERN = re.compile(r'035[A-F0-9]{21,23}')
+    # Based on actual demo software screenshots: 
+    # EPCs are 24 characters long (12 bytes) and start with 035
+    # Exact pattern observed in demo software
+    EPC_PATTERN = re.compile(r'035[A-F0-9]{21}')
     
 
     
@@ -81,76 +82,97 @@ def scan_rfid_tags(port, baud_rate, duration, verbose=False):
             
             # Record start time
             start_time = time.time()
-            read_attempts = 0  # Count our read attempts
             
             # Clear any previous command state
             ser.write(stop_cmd)
             time.sleep(0.2)  # Brief wait
             
+            # Send the inventory command to start scanning
+            ser.write(inventory_cmd)
+            
+            # Wait briefly for the reader to process
+            time.sleep(0.1)
+            
+            # Send the start read command
+            ser.write(start_read_cmd)
+            
             if verbose:
-                print(f"Scanning for RFID tags for {duration} seconds...")
+                print(f"Continuously scanning for RFID tags for {duration} seconds...")
             
+            # Initialize data buffer
+            accumulated_data = bytearray()
+            
+            # Track when we last sent commands to the reader
+            last_command_time = time.time()
+            
+            # Scan continuously for the entire duration
             while time.time() - start_time < duration:
-                read_attempts += 1
-                if verbose:
-                    print(f"\nScanning cycle {read_attempts}...")
-                
-                # Send the inventory command to start scanning
-                ser.write(inventory_cmd)
-                
-                # Wait briefly for the reader to process
-                time.sleep(0.1)
-                
-                # Send the start read command
-                ser.write(start_read_cmd)
-                
-                # Scan for 2 seconds continuously
-                scan_start = time.time()
-                accumulated_data = bytearray()
-                
-                if verbose:
-                    print("Reading data...")
-                while time.time() - scan_start < 2.0:
-                    # Check for data
-                    if ser.in_waiting > 0:
-                        # Read available data
-                        raw_data = ser.read(ser.in_waiting)
-                        accumulated_data.extend(raw_data)
-                        
-                        # Print hex data for debugging if verbose
-                        if verbose and len(raw_data) > 3:
-                            hex_data = binascii.hexlify(raw_data).decode().upper()
-                            formatted_hex = ' '.join(hex_data[i:i+2] for i in range(0, len(hex_data), 2))
-                            print(f"Received: {formatted_hex}")
-                        
-                        # Check for tags in hex data
-                        hex_accumulated = binascii.hexlify(accumulated_data).decode().upper()
-                        
-                        # Find all EPC tags in the data
-                        matches = EPC_PATTERN.findall(hex_accumulated)
-                        
-                        # Process each match - normalize and store unique tags
-                        for full_epc in matches:
-                            # Normalize to base EPC (take just the first 24 chars)
-                            # This ensures we don't count the same tag multiple times
-                            # if it appears with different suffixes
-                            base_epc = full_epc[:24] if len(full_epc) > 24 else full_epc
-                            
-                            # Check for standard EPC format (035 + 21-23 chars)
-                            if base_epc not in unique_tags and re.match(r'^035[A-F0-9]{21,23}$', base_epc):
-                                if verbose:
-                                    print(f"✓ DETECTED TAG: {base_epc}")
-                                timestamp = datetime.now(timezone.utc).isoformat()
-                                unique_tags[base_epc] = timestamp
+                # Check for data
+                if ser.in_waiting > 0:
+                    # Read available data
+                    raw_data = ser.read(ser.in_waiting)
+                    accumulated_data.extend(raw_data)
                     
-                    # Small delay to prevent CPU overuse
-                    time.sleep(0.05)
-                
-                # End of scan period 
-                if verbose:
-                    print(f"End of scan cycle {read_attempts} ({len(unique_tags)} tags found)")
+                    # Print hex data for debugging if verbose
+                    if verbose and len(raw_data) > 3:
+                        hex_data = binascii.hexlify(raw_data).decode().upper()
+                        formatted_hex = ' '.join(hex_data[i:i+2] for i in range(0, len(hex_data), 2))
+                        print(f"Received: {formatted_hex}")
+                        
+                        # Print scan in demo software format to debug
+                        if len(hex_data) >= 24:
+                            print(f"Demo-like format: {hex_data}")
+                    
+                    # Check for tags in hex data
+                    hex_accumulated = binascii.hexlify(accumulated_data).decode().upper()
+                    
+                    # Find all EPC tags in the data - using original method
+                    matches = EPC_PATTERN.findall(hex_accumulated)
+                    
+                    # Do not clear accumulated data completely as it might contain
+                    # partial tags that will be completed in the next data batch
+                    # Instead, keep the last portion that might contain partial tag data
+                    if len(accumulated_data) > 100:
+                        accumulated_data = accumulated_data[-100:]
+                    
+                    # Process each match - normalize and store unique tags
+                    for full_epc in matches:
+                        # Normalize to base EPC (take just the first 24 chars)
+                        # This ensures we don't count the same tag multiple times
+                        # if it appears with different suffixes
+                        base_epc = full_epc[:24] if len(full_epc) > 24 else full_epc
+                        
+                        # Check for standard EPC format (035 + 21-23 chars)
+                        if base_epc not in unique_tags and re.match(r'^035[A-F0-9]{21,23}$', base_epc):
+                            if verbose:
+                                print(f"✓ DETECTED TAG: {base_epc}")
+                            timestamp = datetime.now(timezone.utc).isoformat()
+                            unique_tags[base_epc] = timestamp
+                        
+                # Periodically reissue commands to keep the reader scanning
+                current_time = time.time()
+                if current_time - last_command_time > 1.0:  # Reissue commands every 1 second
+                    # Resend inventory command
+                    ser.write(inventory_cmd)
+                    time.sleep(0.05)  # Brief wait
+                    
+                    # Resend start read command
+                    ser.write(start_read_cmd)
+                    
+                    # Update the last command time
+                    last_command_time = current_time
+                    
+                    if verbose:
+                        print("Reissuing scan commands...")
+                        
+                # Periodically report progress
+                elapsed = time.time() - start_time
+                if verbose and int(elapsed) % 5 == 0 and int(elapsed) > 0 and int(elapsed) != int(elapsed - 0.1):
+                    print(f"Scan progress: {int(elapsed)}/{duration} seconds, {len(unique_tags)} tags found so far")
             
-
+        
+        # Set count of detected tags
+        results["count"] = len(unique_tags)
         
         # Convert all unique tags to the required format
         for tag, timestamp in unique_tags.items():
