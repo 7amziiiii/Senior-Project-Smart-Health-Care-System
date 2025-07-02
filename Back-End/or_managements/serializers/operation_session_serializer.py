@@ -15,14 +15,13 @@ class OperationSessionListSerializer(serializers.ModelSerializer):
     operation_type = serializers.StringRelatedField()
     operation_room = serializers.StringRelatedField()
     state_display = serializers.CharField(source='get_state_display', read_only=True)
-    user_count = serializers.SerializerMethodField()
-    
+    users = UserWithProfileSerializer(many=True, read_only=True)    
     class Meta:
         model = OperationSession
         fields = [
             'id', 'operation_type', 'operation_room', 
             'scheduled_time', 'state', 'state_display',
-             'created_at', 'updated_at'
+             'users', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
     
