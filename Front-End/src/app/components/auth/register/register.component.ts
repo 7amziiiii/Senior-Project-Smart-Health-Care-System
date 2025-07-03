@@ -20,7 +20,8 @@ export class RegisterComponent implements OnInit {
   roles = [
     { value: 'nurse', label: 'Nurse' },
     { value: 'doctor', label: 'Doctor' },
-    { value: 'maintenance', label: 'Maintenance Engineer' }
+    { value: 'maintenance', label: 'Maintenance Engineer' },
+    { value: 'it_admin', label: 'Hospital IT Admin' }
   ];
 
   constructor(

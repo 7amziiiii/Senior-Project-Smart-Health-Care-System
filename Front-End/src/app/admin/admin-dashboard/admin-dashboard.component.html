@@ -1,0 +1,59 @@
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>Hospital Admin Dashboard</h1>
+    <div class="simulation-mode">Simulation Mode: User approval simulated in frontend</div>
+    <button class="logout-btn" (click)="logout()">Logout</button>
+  </div>
+
+  <div class="approval-section">
+    <h2>Pending User Registrations</h2>
+    
+    <div *ngIf="loading" class="loading">
+      <p>Loading pending users...</p>
+    </div>
+
+    <div *ngIf="error" class="error-message">
+      <p>{{ error }}</p>
+      <button (click)="loadPendingUsers()">Retry</button>
+    </div>
+
+    <div *ngIf="successMessage" class="success-message">
+      <p>{{ successMessage }}</p>
+    </div>
+
+    <div *ngIf="!loading && pendingUsers.length === 0 && !error" class="empty-state">
+      <p>No pending user registrations found.</p>
+    </div>
+
+    <table *ngIf="!loading && pendingUsers.length > 0" class="users-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Date Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of pendingUsers">
+          <td>{{ user.username }}</td>
+          <td>{{ user.first_name }} {{ user.last_name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.role }}</td>
+          <td>{{ user.date_joined | date:'medium' }}</td>
+          <td>
+            <button 
+              [disabled]="processingUsers[user.id]" 
+              (click)="approveUser(user)"
+              class="approve-btn">
+              <span *ngIf="!processingUsers[user.id]">Approve</span>
+              <span *ngIf="processingUsers[user.id]">Processing...</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

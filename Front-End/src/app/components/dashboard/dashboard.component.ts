@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
@@ -8,7 +8,7 @@ import { SurgeryDataService, Surgery } from '../../services/surgery-data.service
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -18,6 +18,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   upcomingSurgeries: Surgery[] = [];
   selectedSurgery: Surgery | null = null;
   showFeatures: boolean = false;
+  isAdmin: boolean = false;
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -32,6 +33,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
+    
+    // Check if the user is an admin
+    this.isAdmin = this.authService.isAdmin();
     
     // Load all surgeries
     const surgeriesSub = this.surgeryDataService.getAllSurgeries().subscribe(surgeries => {

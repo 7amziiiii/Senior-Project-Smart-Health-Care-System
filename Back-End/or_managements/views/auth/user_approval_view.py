@@ -36,6 +36,9 @@ class PendingUsersListView(generics.ListAPIView):
         })
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 class UserApprovalView(APIView):
     """
     View to approve or reject user registrations.
@@ -45,6 +48,9 @@ class UserApprovalView(APIView):
     
     def post(self, request, user_id):
         try:
+            # Log the received parameters to help debug
+            logger.error(f"UserApprovalView received: user_id={user_id}, request.data={request.data}")
+            
             user = User.objects.get(id=user_id, is_active=False)
             action = request.data.get('action', '').lower()
             
