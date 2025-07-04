@@ -38,6 +38,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Allow credentials (cookies) to be included in cross-origin requests
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = ['http://localhost:4200']
 
 
 # Application definition

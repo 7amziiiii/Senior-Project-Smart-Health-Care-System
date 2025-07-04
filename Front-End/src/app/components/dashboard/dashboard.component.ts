@@ -36,6 +36,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     
     // Check if the user is an admin
     this.isAdmin = this.authService.isAdmin();
+    console.log('User admin status:', this.isAdmin);
+    console.log('User data:', this.authService.getUserData());
     
     // Load all surgeries
     const surgeriesSub = this.surgeryDataService.getAllSurgeries().subscribe(surgeries => {
