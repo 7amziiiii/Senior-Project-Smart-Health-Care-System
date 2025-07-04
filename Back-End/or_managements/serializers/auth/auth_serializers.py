@@ -25,7 +25,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             password=validated_data['password'],
-            is_active=True  # Auto-activate users for now, admin approval flow will be implemented later
+            is_active=False  # Users need admin approval before they can log in
         )
         
         # Update the user's profile with the role
