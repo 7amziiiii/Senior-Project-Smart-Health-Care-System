@@ -42,7 +42,6 @@ testem.log
 *.pot
 *.pyc
 __pycache__
-db.sqlite3
 
 # System files
 .DS_Store

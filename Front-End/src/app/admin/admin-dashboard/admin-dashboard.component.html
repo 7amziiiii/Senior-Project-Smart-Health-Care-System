@@ -1,59 +1,164 @@
 <div class="admin-container">
   <div class="admin-header">
-    <h1>Hospital Admin Dashboard</h1>
-    <div class="simulation-mode">Simulation Mode: User approval simulated in frontend</div>
+    <h1>Admin Dashboard</h1>
+    <div class="simulation-mode">Simulation Mode: Simulated in frontend</div>
     <button class="logout-btn" (click)="logout()">Logout</button>
   </div>
 
-  <div class="approval-section">
-    <h2>Pending User Registrations</h2>
+  <div class="admin-options" *ngIf="!showApprovalPanel && !showDashboard && !showInstruments">
+    <div class="option-card" (click)="navigateToPanel('approval')">
+      <h2>Admin Panel</h2>
+      <div class="option-content">
+        <p>Manage user registrations and approvals</p>
+      </div>
+    </div>
     
-    <div *ngIf="loading" class="loading">
-      <p>Loading pending users...</p>
+    <div class="option-card" (click)="navigateToPanel('dashboard')">
+      <h2>OR Dashboard</h2>
+      <div class="option-content">
+        <p>View surgeries and OR management</p>
+      </div>
     </div>
-
-    <div *ngIf="error" class="error-message">
-      <p>{{ error }}</p>
-      <button (click)="loadPendingUsers()">Retry</button>
+    
+    <div class="option-card" (click)="navigateToPanel('instruments')">
+      <h2>Registration Stuff</h2>
+      <div class="option-content">
+        <p>Register instruments, RFID tags, and equipment</p>
+      </div>
     </div>
-
-    <div *ngIf="successMessage" class="success-message">
-      <p>{{ successMessage }}</p>
+  </div>
+  
+  <!-- User Approval Panel -->
+  <div class="panel-container" *ngIf="showApprovalPanel">
+    <div class="panel-header">
+      <button class="back-btn" (click)="backToMainMenu()">Back</button>
+      <h2>User Registration Approval</h2>
     </div>
+    
+    <div class="approval-section">
+      <div *ngIf="loading" class="loading">
+        <p>Loading pending users...</p>
+      </div>
 
-    <div *ngIf="!loading && pendingUsers.length === 0 && !error" class="empty-state">
-      <p>No pending user registrations found.</p>
+      <div *ngIf="error" class="error-message">
+        <p>{{ error }}</p>
+        <button (click)="loadPendingUsers()">Retry</button>
+      </div>
+
+      <div *ngIf="successMessage" class="success-message">
+        <p>{{ successMessage }}</p>
+      </div>
+
+      <div *ngIf="!loading && pendingUsers.length === 0 && !error" class="empty-state">
+        <p>No pending user registrations found.</p>
+      </div>
+
+      <table *ngIf="!loading && pendingUsers.length > 0" class="users-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Date Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of pendingUsers">
+            <td>{{ user.username }}</td>
+            <td>{{ user.first_name }} {{ user.last_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>{{ user.date_joined | date:'medium' }}</td>
+            <td>
+              <button 
+                [disabled]="processingUsers[user.id]" 
+                (click)="approveUser(user)"
+                class="approve-btn">
+                <span *ngIf="!processingUsers[user.id]">Approve</span>
+                <span *ngIf="processingUsers[user.id]">Processing...</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <table *ngIf="!loading && pendingUsers.length > 0" class="users-table">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Full Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Date Joined</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of pendingUsers">
-          <td>{{ user.username }}</td>
-          <td>{{ user.first_name }} {{ user.last_name }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.role }}</td>
-          <td>{{ user.date_joined | date:'medium' }}</td>
-          <td>
-            <button 
-              [disabled]="processingUsers[user.id]" 
-              (click)="approveUser(user)"
-              class="approve-btn">
-              <span *ngIf="!processingUsers[user.id]">Approve</span>
-              <span *ngIf="processingUsers[user.id]">Processing...</span>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  </div>
+  
+  <!-- OR Dashboard -->
+  <div class="panel-container" *ngIf="showDashboard">
+    <div class="panel-header">
+      <button class="back-btn" (click)="backToMainMenu()">Back</button>
+      <h2>OR Dashboard</h2>
+    </div>
+    
+    <div class="dashboard-content">
+      <p>Redirecting to OR Dashboard...</p>
+    </div>
+  </div>
+  
+  <!-- Instrument Registration -->
+  <div class="panel-container" *ngIf="showInstruments">
+    <div class="panel-header">
+      <button class="back-btn" (click)="backToMainMenu()">Back</button>
+      <h2>Registration Stuff</h2>
+    </div>
+    
+    <div class="instruments-container">
+      <div class="instruments-options">
+        <button class="option-btn" (click)="showInstrumentRegistration()">Instrument Registration</button>
+        <button class="option-btn disabled">Large Equipment (Coming Soon)</button>
+        <button class="option-btn disabled">Tray Registration (Coming Soon)</button>
+      </div>
+      
+      <div class="instrument-registration" *ngIf="showInstrumentReg">
+        <h3>RFID Instrument Registration</h3>
+        <div class="scan-section">
+          <button [disabled]="scanningRfid" class="scan-btn" (click)="scanForRfid()">
+            <span *ngIf="!scanningRfid">Scan for RFID Tags</span>
+            <span *ngIf="scanningRfid">Scanning...</span>
+          </button>
+        </div>
+        
+        <div *ngIf="rfidFound" class="registration-form">
+          <div class="form-group">
+            <label>RFID Tag ID:</label>
+            <input type="text" [value]="foundRfidId" readonly>
+          </div>
+          
+          <div class="form-group">
+            <label>Instrument Type:</label>
+            <select [(ngModel)]="selectedInstrumentType">
+              <option value="">Select an instrument type</option>
+              <option *ngFor="let type of instrumentTypes" [value]="type.id">{{ type.name }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Instrument Status:</label>
+            <select [(ngModel)]="newInstrumentStatus">
+              <option value="available">Available</option>
+              <option value="in_use">In Use</option>
+              <option value="missing">Missing</option>
+              <option value="under_sterilization">Under Sterilization</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Link to Tray (Optional):</label>
+            <select [(ngModel)]="selectedTrayId">
+              <option value="">No Tray</option>
+              <option *ngFor="let tray of availableTrays" [value]="tray.id">{{ tray.name }}</option>
+            </select>
+          </div>
+          
+          <div class="form-actions">
+            <button class="submit-btn" (click)="saveInstrument()">Register Instrument</button>
+            <button class="cancel-btn" (click)="cancelRegistration()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
