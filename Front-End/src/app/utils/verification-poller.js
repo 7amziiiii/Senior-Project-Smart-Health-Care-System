@@ -12,7 +12,7 @@ class VerificationPoller {
      * @param {number} sessionId - The operation session ID to poll for
      * @param {number} updateInterval - Polling interval in milliseconds (default: 5000ms)
      */
-    constructor(sessionId, updateInterval = 5000) {
+    constructor(sessionId, updateInterval = 5000, authToken = null) {
         // Validate sessionId
         if (!sessionId || isNaN(parseInt(sessionId)) || parseInt(sessionId) <= 0) {
             throw new Error('Invalid session ID provided');
@@ -20,6 +20,7 @@ class VerificationPoller {
         
         this.sessionId = parseInt(sessionId);
         this.updateInterval = updateInterval; // 5 seconds by default
+        this.authToken = authToken; // Authentication token
         this.timerId = null;
         this.callbacks = [];
         this.lastUpdate = null;
@@ -66,13 +67,21 @@ class VerificationPoller {
         // Debug: Log the complete URL being fetched
         console.log('DEBUG - Fetching verification status from URL:', url);
         
+        // Prepare headers with authentication token if available
+        const headers = {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'  // Helps Django recognize AJAX requests
+        };
+        
+        // Add authentication token if available
+        if (this.authToken) {
+            headers['Authorization'] = `Token ${this.authToken}`;
+        }
+        
         // Include credentials in the request to ensure authentication cookies are sent
         fetch(url, {
             credentials: 'include',  // Add credentials option to include cookies
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'  // Helps Django recognize AJAX requests
-            }
+            headers: headers
         })
             .then(response => {
                 // DETAILED DEBUG LOGGING

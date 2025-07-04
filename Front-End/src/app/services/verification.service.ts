@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from './auth.service';
 import VerificationPoller from '../utils/verification-poller.js';
 
 export interface VerificationStatus {
@@ -39,7 +40,7 @@ export class VerificationService {
   private verificationStatus = new BehaviorSubject<VerificationStatus | null>(null);
   private pollingActive = false;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private authService: AuthService) { }
 
   /**
    * Start polling for verification status updates
@@ -62,7 +63,10 @@ export class VerificationService {
         const VerificationPoller = module.default;
         
         try {
-          this.verificationPoller = new VerificationPoller(sessionId, updateInterval);
+          // Get authentication token to pass to the poller
+          const token = this.authService.getToken();
+          
+          this.verificationPoller = new VerificationPoller(sessionId, updateInterval, token);
 
           // Register the update handler
           this.verificationPoller.onUpdate((data: VerificationStatus | any) => {
@@ -171,7 +175,15 @@ export class VerificationService {
   private fetchVerificationStatusDirect(sessionId: number): void {
     const url = `${environment.apiUrl}/verification/${sessionId}/status/`;
     
-    this.http.get<VerificationStatus>(url)
+    // Get authentication token from AuthService
+    const token = this.authService.getToken();
+    
+    // Create headers with authentication token
+    const headers = new HttpHeaders({
+      'Authorization': `Token ${token}`
+    });
+    
+    this.http.get<VerificationStatus>(url, { headers })
       .subscribe({
         next: (data) => {
           console.log('Fetched verification status directly:', data);
@@ -179,6 +191,12 @@ export class VerificationService {
         },
         error: (error) => {
           console.error('Error fetching verification status:', error);
+          
+          // If we get a 401 error, it means authentication failed
+          if (error.status === 401) {
+            console.error('Authentication failed. Please log in again.');
+            // You could redirect to login page or show a notification here
+          }
         }
       });
   }
