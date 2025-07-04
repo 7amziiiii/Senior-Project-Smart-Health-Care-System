@@ -5,6 +5,8 @@ import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import AllowAny
 
 from or_managements.models import OperationSession, VerificationSession
 from or_managements.services.verification_service import VerificationService
@@ -12,6 +14,8 @@ from or_managements.services.verification_service import VerificationService
 logger = logging.getLogger(__name__)
 
 class VerificationViewSet(viewsets.ViewSet):
+    # Using default authentication classes and permission classes
+    # This will use the project's default settings (TokenAuthentication, SessionAuthentication, IsAuthenticated)
     """
     API endpoints for verification operations.
     """

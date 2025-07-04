@@ -180,10 +180,15 @@ export class VerificationService {
     
     // Create headers with authentication token
     const headers = new HttpHeaders({
-      'Authorization': `Token ${token}`
+      'Authorization': `Token ${token}`,
+      'X-Requested-With': 'XMLHttpRequest'
     });
     
-    this.http.get<VerificationStatus>(url, { headers })
+    // Include both token and session credentials
+    this.http.get<VerificationStatus>(url, {
+      headers: headers,
+      withCredentials: true // This enables sending cookies with cross-origin requests
+    })
       .subscribe({
         next: (data) => {
           console.log('Fetched verification status directly:', data);

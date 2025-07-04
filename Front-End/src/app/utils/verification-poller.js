@@ -11,6 +11,7 @@ class VerificationPoller {
      * 
      * @param {number} sessionId - The operation session ID to poll for
      * @param {number} updateInterval - Polling interval in milliseconds (default: 5000ms)
+     * @param {string} authToken - Authentication token
      */
     constructor(sessionId, updateInterval = 5000, authToken = null) {
         // Validate sessionId
@@ -61,117 +62,96 @@ class VerificationPoller {
      * @param {boolean} performScan - Whether to perform a new RFID scan (default: false)
      */
     fetchStatus(performScan = false) {
-        // Fix: Add trailing slash required by Django REST Framework
         const url = `/api/verification/${this.sessionId}/status/${performScan ? '?scan=true' : ''}`;
+        console.log('Fetching verification status from URL:', url);
+        console.log('Using auth token:', this.authToken ? 'YES' : 'NO');
         
-        // Debug: Log the complete URL being fetched
-        console.log('DEBUG - Fetching verification status from URL:', url);
+        const self = this;
         
-        // Prepare headers with authentication token if available
-        const headers = {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'  // Helps Django recognize AJAX requests
-        };
+        // Use XMLHttpRequest for better CORS support with credentials
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.withCredentials = true; // Send cookies for session authentication
+        xhr.setRequestHeader('Accept', 'application/json');
         
-        // Add authentication token if available
+        // Add token authentication if available
         if (this.authToken) {
-            headers['Authorization'] = `Token ${this.authToken}`;
+            xhr.setRequestHeader('Authorization', `Token ${this.authToken}`);
         }
         
-        // Include credentials in the request to ensure authentication cookies are sent
-        fetch(url, {
-            credentials: 'include',  // Add credentials option to include cookies
-            headers: headers
-        })
-            .then(response => {
-                // DETAILED DEBUG LOGGING
-                console.log('%c ----- VERIFICATION API RESPONSE DETAILS -----', 'background: #222; color: #bada55');
-                console.log('Status:', response.status, response.statusText);
-                console.log('URL:', response.url);
-                console.log('Content-Type:', response.headers.get('content-type'));
-                console.log('All Headers:', Array.from(response.headers.entries()));
-                
-                // Clone the response to read it twice (once for debug, once for processing)
-                const responseClone = response.clone();
-                
-                // Always read the response body for debugging, regardless of status
-                responseClone.text().then(text => {
-                    console.log('Response Body (first 500 chars):');
-                    console.log(text.substring(0, 500));
-                    if (text.includes('<!DOCTYPE html>')) {
-                        console.error('ERROR: Received HTML instead of JSON - likely a login page or error page');
-                    }
-                }).catch(e => console.error('Error reading response body:', e));
-                
-                if (!response.ok) {
-                    // Extract more detailed error information
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        // If JSON error response, parse it
-                        return response.json().then(errorData => {
-                            throw new Error(
-                                `API Error: ${response.status} - ${errorData.error || errorData.message || response.statusText}`
-                            );
-                        });
-                    } else {
-                        // If HTML or other non-JSON response, extract useful information
-                        return response.text().then(errorText => {
-                            let errorMessage = `Network response was not ok: ${response.status}`;
-                            
-                            // Try to extract a more meaningful error message
-                            const titleMatch = errorText.match(/<title>(.*?)<\/title>/i);
-                            if (titleMatch && titleMatch[1]) {
-                                errorMessage += ` - ${titleMatch[1]}`;
-                            }
-                            
-                            throw new Error(errorMessage);
-                        });
-                    }
+        xhr.onload = function() {
+            console.log('Response received with status:', xhr.status);
+            
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('Successfully parsed response data');
+                    self.errorCount = 0; // Reset error count on success
+                    self.lastUpdate = new Date();
+                    self.notifyCallbacks(data);
+                } catch (e) {
+                    console.error('Failed to parse JSON response:', e);
+                    console.error('Raw response text:', xhr.responseText.substring(0, 200));
+                    self.handleError(new Error('Failed to parse verification data'));
                 }
-                
-                // Check content type to ensure it's JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error(`Invalid response format: ${contentType || 'unknown'}`);
-                }
-                
-                // Reset error count on success
-                this.errorCount = 0;
-                
-                return response.json();
-            })
-            .then(data => {
-                this.lastUpdate = new Date();
-                // Notify all callbacks
-                this.callbacks.forEach(callback => callback(data, this.lastUpdate));
-            })
-            .catch(error => {
-                console.error('Error fetching verification status:', error);
-                
-                // Increment error count
-                this.errorCount++;
-                
-                // Stop polling after too many consecutive errors
-                if (this.errorCount >= this.maxErrors) {
-                    console.warn(`Stopping verification polling after ${this.maxErrors} consecutive errors.`);
-                    this.stop();
-                    
-                    // Notify callbacks with error
-                    this.callbacks.forEach(callback => callback({
-                        error: 'Verification polling stopped due to multiple errors',
-                        details: error.message
-                    }, this.lastUpdate));
-                } else {
-                    // Still notify about the error even if we're not stopping
-                    this.callbacks.forEach(callback => callback({
-                        error: 'Verification update failed',
-                        details: error.message,
-                        retrying: true,
-                        errorCount: this.errorCount,
-                        maxErrors: this.maxErrors
-                    }, this.lastUpdate));
-                }
+            } else {
+                console.error('HTTP error response:', xhr.status);
+                console.error('Response body:', xhr.responseText.substring(0, 200));
+                self.handleError(new Error(`Server returned status ${xhr.status}: ${xhr.statusText}`));
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.error('Network error occurred');
+            self.handleError(new Error('Network error while fetching verification data'));
+        };
+        
+        // Send the request
+        xhr.send();
+    }
+    
+    /**
+     * Handle error during verification polling
+     */
+    handleError(error) {
+        console.error('Error during verification polling:', error.message);
+        
+        // Increment error count
+        this.errorCount++;
+        
+        // Stop polling after too many consecutive errors
+        if (this.errorCount >= this.maxErrors) {
+            console.warn(`Stopping verification polling after ${this.maxErrors} consecutive errors.`);
+            this.stop();
+            
+            // Notify callbacks with final error
+            this.notifyCallbacks({
+                error: 'Verification polling stopped due to multiple errors',
+                details: error.message
             });
+        } else {
+            // Still notify about the error even if we're not stopping
+            this.notifyCallbacks({
+                error: 'Verification update failed',
+                details: error.message,
+                retrying: true,
+                errorCount: this.errorCount,
+                maxErrors: this.maxErrors
+            });
+        }
+    }
+    
+    /**
+     * Notify all registered callbacks with new data
+     */
+    notifyCallbacks(data) {
+        this.callbacks.forEach(callback => {
+            try {
+                callback(data, this.lastUpdate);
+            } catch (e) {
+                console.error('Error in verification callback:', e);
+            }
+        });
     }
     
     /**

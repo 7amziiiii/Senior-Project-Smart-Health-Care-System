@@ -33,11 +33,18 @@ export class AdminDashboardComponent implements OnInit {
     this.loading = true;
     this.error = '';
     
+    console.log('Loading pending users...');
     this.adminService.getPendingUsers()
-      .pipe(finalize(() => this.loading = false))
+      .pipe(finalize(() => {
+        this.loading = false;
+        console.log('Loading finished, loading state is now:', this.loading);
+      }))
       .subscribe({
         next: (users) => {
+          console.log('Received pending users:', users);
           this.pendingUsers = users;
+          console.log('pendingUsers array length:', this.pendingUsers.length);
+          console.log('pendingUsers array content:', this.pendingUsers);
         },
         error: (err) => {
           console.error('Error fetching pending users:', err);

@@ -13,9 +13,28 @@ export class AuthService {
   private readonly USER_KEY = 'auth_user';
   private apiUrl = environment.apiUrl;
   private isAuthenticated = new BehaviorSubject<boolean>(this.hasToken());
-  private simulationMode = true; // ENABLED to allow login to work
+  private simulationMode = false; // DISABLED to use real token authentication
   
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {
+    // Clear any simulated tokens when starting in real mode
+    this.clearSimulatedTokens();
+  }
+  
+  /**
+   * Check if the stored token is a simulated token and clear it if we're in real mode
+   */
+  private clearSimulatedTokens(): void {
+    if (!this.simulationMode) {
+      const token = this.getToken();
+      
+      if (token && token.startsWith('simulated-token-')) {
+        console.log('Clearing simulated token');
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USER_KEY);
+        this.isAuthenticated.next(false);
+      }
+    }
+  }
   
   login(username: string, password: string): Observable<any> {
     // Check if simulation mode is enabled
