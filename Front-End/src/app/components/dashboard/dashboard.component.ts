@@ -1,14 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { SurgeryDataService, Surgery } from '../../services/surgery-data.service';
+import { SurgeryFilterPipe } from '../../pipes/surgery-filter.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule, SurgeryFilterPipe],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -19,12 +21,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedSurgery: Surgery | null = null;
   showFeatures: boolean = false;
   isAdmin: boolean = false;
+  searchTerm: string = '';
   private subscriptions: Subscription[] = [];
 
   constructor(
     private authService: AuthService,
     private surgeryDataService: SurgeryDataService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -36,8 +40,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     
     // Check if the user is an admin
     this.isAdmin = this.authService.isAdmin();
-    console.log('User admin status:', this.isAdmin);
-    console.log('User data:', this.authService.getUserData());
     
     // Load all surgeries
     const surgeriesSub = this.surgeryDataService.getAllSurgeries().subscribe(surgeries => {
@@ -47,9 +49,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.ongoingSurgeries = this.surgeries.filter(surgery => surgery.status === 'ongoing');
       this.upcomingSurgeries = this.surgeries.filter(surgery => surgery.status === 'scheduled');
       
-      // Clear any previously selected surgery
-      this.surgeryDataService.setSelectedSurgery(null);
-      this.showFeatures = false;
+      // Check query params for navigation context
+      this.route.queryParams.subscribe(params => {
+        const showFeatures = params['showFeatures'] === 'true';
+        const keepContext = params['keepSurgeryContext'] === 'true';
+        
+        if (showFeatures) {
+          this.showFeatures = true;
+          
+          // If returning from a feature and keeping context, don't clear the surgery
+          if (!keepContext) {
+            // Only clear if we're not preserving context
+            this.surgeryDataService.setSelectedSurgery(null);
+          } else {
+            // Get the currently selected surgery from service
+            const currentSelectedSurgerySub = this.surgeryDataService.getSelectedSurgery().subscribe(surgery => {
+              if (surgery) {
+                this.selectedSurgery = surgery;
+              }
+            });
+            this.subscriptions.push(currentSelectedSurgerySub);
+          }
+        } else {
+          this.showFeatures = false;
+          if (!keepContext) {
+            this.surgeryDataService.setSelectedSurgery(null);
+          }
+        }
+      });
     });
     
     this.subscriptions.push(surgeriesSub);

@@ -14,7 +14,8 @@ export interface Surgery {
   name: string;
   description: string;
   status: 'scheduled' | 'ongoing' | 'completed';
-  scheduledTime?: string;
+  scheduledTime: string;
+  roomNumber: string;
   requiredInstruments: Instrument[];
 }
 
@@ -39,6 +40,7 @@ export class SurgeryDataService {
         description: 'Surgical removal of the appendix',
         status: 'ongoing',
         scheduledTime: '2023-11-15T09:30:00',
+        roomNumber: '301',
         requiredInstruments: [
           { id: 101, name: 'Scalpel handle', inRoom: true },
           { id: 102, name: 'Metzenbaum scissors', inRoom: true },
@@ -66,6 +68,7 @@ export class SurgeryDataService {
         description: 'Surgical delivery of a baby',
         status: 'scheduled',
         scheduledTime: '2023-11-16T10:15:00',
+        roomNumber: '205',
         requiredInstruments: [
           { id: 201, name: 'Scalpel handle', inRoom: true },
           { id: 202, name: 'Mayo scissors', inRoom: false },
@@ -93,6 +96,7 @@ export class SurgeryDataService {
         description: 'Surgical replacement of the knee joint',
         status: 'scheduled',
         scheduledTime: '2023-11-15T14:00:00',
+        roomNumber: '206',
         requiredInstruments: [
           { id: 301, name: 'Oscillating saw handpiece', inRoom: true },
           { id: 302, name: 'Bone saw blades', inRoom: false },

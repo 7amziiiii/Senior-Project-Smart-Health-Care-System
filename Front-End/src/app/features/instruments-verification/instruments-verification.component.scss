@@ -266,13 +266,23 @@
       font-size: 0.9rem;
       
       .status-ongoing {
-        color: #3182ce;
-        font-weight: 500;
+        background-color: #ebf5ff;
+        color: #2b6cb0;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+        border: 1px solid #bae6fd;
+        display: inline-block;
       }
       
       .status-scheduled {
-        color: #38a169;
-        font-weight: 500;
+        background-color: #f0fff4;
+        color: #276749;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+        border: 1px solid #c6f6d5;
+        display: inline-block;
       }
     }
   }
