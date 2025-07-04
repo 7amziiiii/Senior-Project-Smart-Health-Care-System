@@ -49,6 +49,10 @@ from .views.trays.tray_views import (
     TrayRetrieveUpdateDestroyView
 )
 from .views.verification_views import VerificationViewSet
+from .views.outbound_tracking_views import (
+    OutboundTrackingView,
+    OutboundTrackingStatusView
+)
 
 
 # Router for API endpoints
@@ -68,38 +72,45 @@ urlpatterns = [
     path('auth/profile/', UserProfileView.as_view(), name='user-profile'),
     
     # Operation Type URLs
-    path('api/operation-types/', OperationTypeListCreateView.as_view(), name='operation-type-list-create'),
-    path('api/operation-types/<int:pk>/', OperationTypeRetrieveUpdateDestroyView.as_view(), name='operation-type-detail'),
+    path('operation-types/', OperationTypeListCreateView.as_view(), name='operation-type-list-create'),
+    path('operation-types/<int:pk>/', OperationTypeRetrieveUpdateDestroyView.as_view(), name='operation-type-detail'),
     
     # RFID Reader URLs
-    path('api/rfid-readers/', RFIDReaderListCreateView.as_view(), name='rfid-reader-list-create'),
-    path('api/rfid-readers/<int:pk>/', RFIDReaderRetrieveUpdateDestroyView.as_view(), name='rfid-reader-detail'),
+    path('rfid-readers/', RFIDReaderListCreateView.as_view(), name='rfid-reader-list-create'),
+    path('rfid-readers/<int:pk>/', RFIDReaderRetrieveUpdateDestroyView.as_view(), name='rfid-reader-detail'),
     
     # RFID Tag URLs
-    path('api/rfid-tags/', RFIDTagListCreateView.as_view(), name='rfid-tag-list-create'),
-    path('api/rfid-tags/<int:pk>/', RFIDTagRetrieveUpdateDestroyView.as_view(), name='rfid-tag-detail'),
+    path('rfid-tags/', RFIDTagListCreateView.as_view(), name='rfid-tag-list-create'),
+    path('rfid-tags/<int:pk>/', RFIDTagRetrieveUpdateDestroyView.as_view(), name='rfid-tag-detail'),
     
     # Operation Room URLs
-    path('api/operation-rooms/', OperationRoomListCreateView.as_view(), name='operation-room-list-create'),
-    path('api/operation-rooms/<int:pk>/', OperationRoomRetrieveUpdateDestroyView.as_view(), name='operation-room-detail'),
+    path('operation-rooms/', OperationRoomListCreateView.as_view(), name='operation-room-list-create'),
+    path('operation-rooms/<int:pk>/', OperationRoomRetrieveUpdateDestroyView.as_view(), name='operation-room-detail'),
     
     # Operation Session URLs
-    path('api/operation-sessions/', OperationSessionListCreateView.as_view(), name='operation-session-list-create'),
-    path('api/operation-sessions/<int:pk>/', OperationSessionRetrieveUpdateDestroyView.as_view(), name='operation-session-detail'),
+    path('operation-sessions/', OperationSessionListCreateView.as_view(), name='operation-session-list-create'),
+    path('operation-sessions/<int:pk>/', OperationSessionRetrieveUpdateDestroyView.as_view(), name='operation-session-detail'),
     
     # Instrument URLs
-    path('api/instruments/', InstrumentListCreateView.as_view(), name='instrument-list-create'),
-    path('api/instruments/<int:pk>/', InstrumentRetrieveUpdateDestroyView.as_view(), name='instrument-detail'),
+    path('instruments/', InstrumentListCreateView.as_view(), name='instrument-list-create'),
+    path('instruments/<int:pk>/', InstrumentRetrieveUpdateDestroyView.as_view(), name='instrument-detail'),
     
     # Large Equipment URLs
-    path('api/large-equipment/', LargeEquipmentListCreateView.as_view(), name='large-equipment-list-create'),
-    path('api/large-equipment/<int:pk>/', LargeEquipmentRetrieveUpdateDestroyView.as_view(), name='large-equipment-detail'),
+    path('large-equipment/', LargeEquipmentListCreateView.as_view(), name='large-equipment-list-create'),
+    path('large-equipment/<int:pk>/', LargeEquipmentRetrieveUpdateDestroyView.as_view(), name='large-equipment-detail'),
     
     # Tray URLs
-    path('api/trays/', TrayListCreateView.as_view(), name='tray-list-create'),
-    path('api/trays/<int:pk>/', TrayRetrieveUpdateDestroyView.as_view(), name='tray-detail'),
+    path('trays/', TrayListCreateView.as_view(), name='tray-list-create'),
+    path('trays/<int:pk>/', TrayRetrieveUpdateDestroyView.as_view(), name='tray-detail'),
     
+    # Outbound Tracking URLs
+    path('operation-sessions/<int:operation_session_id>/outbound-check/', 
+         OutboundTrackingView.as_view(), 
+         name='outbound-tracking-check'),
+    path('operation-sessions/<int:operation_session_id>/outbound-status/', 
+         OutboundTrackingStatusView.as_view(), 
+         name='outbound-tracking-status'),
 
     # Include router URLs for viewsets
-    path('api/', include(router.urls)),
+    path('', include(router.urls)),
 ]

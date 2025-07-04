@@ -20,7 +20,7 @@ export interface PendingUser {
 })
 export class AdminService {
   private apiUrl = environment.apiUrl;
-  private simulationMode = true; // Set to true to use frontend-only simulation
+  private simulationMode = false; // Set to false to use the real backend API
   private pendingUsers: PendingUser[] = [];
 
   constructor(private http: HttpClient) { }
@@ -73,10 +73,30 @@ export class AdminService {
       return of(this.pendingUsers);
     }
     
-    return this.http.get<{count: number, pending_users: PendingUser[]}>(`${this.apiUrl}/auth/users/approval/`)
-      .pipe(
-        map(response => response.pending_users || [])
-      );
+    return this.http.get<any>(`${this.apiUrl}/auth/users/approval/`, {
+      withCredentials: true // Include cookies for authentication
+    }).pipe(
+      map(response => {
+        console.log('Backend response for pending users:', response);
+        
+        // Handle different response formats
+        if (Array.isArray(response)) {
+          // If response is already an array
+          return response;
+        } else if (response && response.pending_users) {
+          // If response is {count, pending_users}
+          return response.pending_users || [];
+        } else if (response && typeof response === 'object') {
+          // If response is another object structure, try to find users
+          console.log('Unexpected response format, searching for users array');
+          return Object.values(response).find(Array.isArray) || [];
+        } else {
+          // Fallback to empty array
+          console.warn('Could not extract users from response');
+          return [];
+        }
+      })
+    );
   }
 
   /**
@@ -110,6 +130,8 @@ export class AdminService {
       return throwError(() => new Error('User not found'));
     }
     
-    return this.http.post<any>(`${this.apiUrl}/auth/users/${userId}/approve/`, { action: 'approve' });
+    return this.http.post<any>(`${this.apiUrl}/auth/users/${userId}/approve/`, { action: 'approve' }, {
+      withCredentials: true // Include cookies for authentication
+    });
   }
 }

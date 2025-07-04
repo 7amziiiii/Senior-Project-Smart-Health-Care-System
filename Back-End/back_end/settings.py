@@ -36,6 +36,9 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:4201',
 ]
 
+# Allow credentials (cookies) to be included in cross-origin requests
+CORS_ALLOW_CREDENTIALS = True
+
 
 # Application definition
 
