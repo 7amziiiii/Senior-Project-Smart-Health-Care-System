@@ -23,4 +23,4 @@ class TraySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Tray
-        fields = ['id', 'name', 'number_of_instruments', 'tag']
+        fields = ['id', 'name', 'number_of_instruments', 'tag', 'status']

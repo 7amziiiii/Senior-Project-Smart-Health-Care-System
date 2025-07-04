@@ -47,7 +47,7 @@ class VerificationService:
             operation_session=self.operation_session,
             defaults={
                 'state': 'incomplete',
-                'open_until': timezone.now() + timedelta(hours=24),
+                'open_until': self.operation_session.scheduled_time,
                 'used_items': {},
                 'missing_items': {},
                 'available_items': {},
@@ -164,16 +164,22 @@ class VerificationService:
             List of scan results
         """
         try:
-            # Get the RFID readers for this operation session
+            # Get the RFID reader directly from the operation room
             operation_room = self.operation_session.operation_room
-            readers = RFID_Reader.objects.filter(operation_room=operation_room)
+            reader = operation_room.reader
             
-            if not readers.exists():
-                logger.error(f"No RFID readers found for operation room {operation_room.id}")
+            if reader is None:
+                logger.error(f"No RFID reader found for operation room {operation_room.id}")
                 return []
             
-            # Use the rfid_scanner script to scan for tags
-            scan_results = scan_rfid_tags(duration)
+            # Get the reader's port and baud rate
+            port = reader.port
+            baud_rate = reader.baud_rate
+            
+            logger.info(f"Using RFID reader on port {port} with baud rate {baud_rate}")
+            
+            # Use the rfid_scanner script to scan for tags with proper parameters
+            scan_results = scan_rfid_tags(port, baud_rate, duration, verbose=False)
             logger.info(f"Found {len(scan_results)} RFID tag(s)")
             
             return scan_results
@@ -196,23 +202,41 @@ class VerificationService:
         trays = []
         
         # Process each scan result (EPC)
-        for result in scan_results:
+        for result in scan_results.get("tags", []):
             epc = result.get('epc')
             if not epc:
                 continue
                 
-            # Try to find a tag with this EPC
+            # Try to find a tag with this EPC (stored as tag_id in the database)
             try:
-                tag = RFIDTag.objects.get(epc=epc)
+                # Use tag_id field instead of epc since that's what the RFIDTag model uses
+                tag = RFIDTag.objects.get(tag_id=epc)
                 
-                # Add the associated instrument or tray if it exists
-                if tag.instrument and tag.instrument not in instruments:
-                    instruments.append(tag.instrument)
-                elif tag.tray and tag.tray not in trays:
-                    trays.append(tag.tray)
+                logger.info(f"Found tag {tag.tag_id} in database")
+                
+                # Check for related instrument (using the reverse relation)
+                try:
+                    # For OneToOne field, the reverse relation is a direct attribute
+                    instrument = tag.tag
+                    if instrument and instrument not in instruments:
+                        logger.info(f"Found instrument {instrument.name} with tag {tag.tag_id}")
+                        instruments.append(instrument)
+                except Instrument.DoesNotExist:
+                    pass
+                
+                # Check for related trays (there could be multiple with ForeignKey)
+                related_trays = Tray.objects.filter(tag=tag)
+                for tray in related_trays:
+                    if tray not in trays:
+                        logger.info(f"Found tray {tray.name} with tag {tag.tag_id}")
+                        trays.append(tray)
+                        
+                if not hasattr(tag, 'tag') and not related_trays:
+                    logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray")
             except RFIDTag.DoesNotExist:
                 logger.warning(f"RFID tag with EPC {epc} not found in database")
         
+        logger.info(f"Mapped EPCs to {len(instruments)} instruments and {len(trays)} trays")
         return instruments, trays
     
     def _get_required_items(self):
@@ -236,6 +260,10 @@ class VerificationService:
             
             # Process required trays
             required_tray_names = data.get('trays', {})
+        
+        # Always return a tuple, even if empty dictionaries
+        return required_instrument_names, required_tray_names
+    
     def _categorize_items(self, found_instruments, found_trays, required_instrument_names, required_tray_names):
         """
         Determine used/missing/extra/available items based on name and quantity.
@@ -422,16 +450,11 @@ class VerificationService:
         return matches
     
     def _update_item_states(self):
-        """Set matched instruments and trays to 'in_use' state."""
+        """Set matched instruments to 'in_use' state."""
         # Update instruments
         for instrument in self.used_instruments:
             instrument.status = 'in_use'
             instrument.save(update_fields=['status'])
-        
-        # Update trays
-        for tray in self.used_trays:
-            tray.status = 'in_use'
-            tray.save(update_fields=['status'])
     
     def _determine_verification_state(self):
         """

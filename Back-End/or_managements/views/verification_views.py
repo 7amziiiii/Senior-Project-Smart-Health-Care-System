@@ -1,6 +1,7 @@
 """
 Views for handling verification API endpoints.
 """
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 from or_managements.models import OperationSession, VerificationSession
 from or_managements.services.verification_service import VerificationService
 
+logger = logging.getLogger(__name__)
 
 class VerificationViewSet(viewsets.ViewSet):
     """
@@ -18,49 +20,35 @@ class VerificationViewSet(viewsets.ViewSet):
     def get_status(self, request, pk=None):
         """
         Get current verification status for an operation session.
-        
-        Query Parameters:
-            scan: If 'true', performs a new RFID scan and verification
-                  If 'false' or omitted, returns the current status
+        Always performs a new RFID scan and verification for real-time monitoring.
         
         Returns:
             Verification status with all categorized items
         """
         try:
+            logger.debug(f"Verification status requested for operation_session_id={pk}")
             operation_session = OperationSession.objects.get(pk=pk)
             
-            # Check if we need to perform a new verification
-            perform_new_verification = request.query_params.get('scan', 'false').lower() == 'true'
+            # Always create service and perform verification
+            # VerificationService constructor will handle get_or_create with proper defaults
+            logger.debug(f"Creating VerificationService for operation_session_id={pk}")
+            service = VerificationService(operation_session.id)
             
-            if perform_new_verification:
-                # Create service and perform verification
-                service = VerificationService(operation_session)
-                result = service.perform_verification()
-                return Response(result)
-            else:
-                # Just return the current state from the verification session
-                try:
-                    verification_session = operation_session.verificationsession
-                    # Format result similar to VerificationService._format_result
-                    result = {
-                        "verification_id": verification_session.id,
-                        "state": verification_session.state,
-                        "used_items": verification_session.used_items,
-                        "missing_items": verification_session.missing_items,
-                        "extra_items": verification_session.extra_items if hasattr(verification_session, 'extra_items') else {},
-                        "available_items": verification_session.available_items,
-                        "available_matches": verification_session.available_matches,
-                        "last_updated": verification_session.updated_at.isoformat() 
-                    }
-                    return Response(result)
-                except VerificationSession.DoesNotExist:
-                    # No verification has been performed yet
-                    return Response(
-                        {"error": "No verification session exists for this operation"},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
+            logger.debug(f"Performing verification for operation_session_id={pk}")
+            result = service.perform_verification()
+            
+            logger.debug(f"Verification completed for operation_session_id={pk}: {result}")
+            return Response(result)  # Return the result directly
+            
         except OperationSession.DoesNotExist:
+            logger.warning(f"Operation session not found: {pk}")
             return Response(
                 {"error": "Operation session not found"},
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.exception(f"Error in verification status: {str(e)}")
+            return Response(
+                {"error": "Verification failed", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
