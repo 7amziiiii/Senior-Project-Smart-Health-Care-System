@@ -87,7 +87,13 @@ export class AuthService {
             const userData = {
               username: response.username || username,
               is_staff: response.is_staff !== undefined ? response.is_staff : (username === 'admin'),
-              is_superuser: response.is_superuser !== undefined ? response.is_superuser : (username === 'admin')
+              is_superuser: response.is_superuser !== undefined ? response.is_superuser : (username === 'admin'),
+              // Add role information for admin check
+              role: response.role || (username === 'admin' ? 'admin' : (username === 'itguy' ? 'it_admin' : 'staff')),
+              // Create profile structure if missing
+              profile: {
+                role: response.profile?.role || (username === 'admin' ? 'admin' : (username === 'itguy' ? 'it_admin' : 'staff'))
+              }
             };
             
             console.log('Storing user data:', userData);

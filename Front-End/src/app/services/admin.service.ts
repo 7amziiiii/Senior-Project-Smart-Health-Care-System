@@ -130,8 +130,19 @@ export class AdminService {
       return throwError(() => new Error('User not found'));
     }
     
-    return this.http.post<any>(`${this.apiUrl}/auth/users/${userId}/approve/`, { action: 'approve' }, {
-      withCredentials: true // Include cookies for authentication
-    });
+    console.log(`Sending approval request for user ID: ${userId} to ${this.apiUrl}/auth/users/${userId}/approve/`);
+    
+    // Include proper headers for authentication and CSRF protection
+    return this.http.post<any>(
+      `${this.apiUrl}/auth/users/${userId}/approve/`, 
+      { action: 'approve' }, // Backend expects an 'action' parameter
+      {
+        withCredentials: true, // Include cookies for authentication
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest', // Helps with CSRF protection
+        }
+      }
+    );
   }
 }

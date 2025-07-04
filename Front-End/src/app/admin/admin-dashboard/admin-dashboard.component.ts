@@ -206,7 +206,21 @@ export class AdminDashboardComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error approving user:', err);
-          this.error = `Failed to approve user ${user.username}. Please try again.`;
+          
+          // Extract more detailed error information
+          let errorMessage = `Failed to approve user ${user.username}.`;
+          
+          if (err.error && err.error.detail) {
+            errorMessage += ` ${err.error.detail}`;
+          } else if (err.error && typeof err.error === 'string') {
+            errorMessage += ` ${err.error}`;
+          } else if (err.message) {
+            errorMessage += ` ${err.message}`;
+          } else if (err.status) {
+            errorMessage += ` Server returned status code ${err.status}.`;
+          }
+          
+          this.error = errorMessage;
         }
       });
   }
