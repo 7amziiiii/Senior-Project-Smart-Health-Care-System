@@ -17,6 +17,7 @@ export class InstrumentsVerificationComponent implements OnInit, OnDestroy {
   selectedSurgery: Surgery | null = null;
   verificationStatus: VerificationStatus | null = null;
   isVerifying: boolean = false;
+  activeTab: 'missing' | 'present' | 'extra' | 'all' = 'missing';
   private subscriptions: Subscription[] = [];
   
   constructor(
