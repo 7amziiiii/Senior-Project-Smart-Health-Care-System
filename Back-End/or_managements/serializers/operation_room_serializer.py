@@ -10,5 +10,5 @@ class OperationRoomSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = OperationRoom
-        fields = ['id', 'room_id', 'state', 'state_display', 'created_at', 'updated_at']
+        fields = ['id', 'room_id', 'state', 'state_display', 'created_at', 'updated_at', 'reader']
         read_only_fields = ['created_at', 'updated_at']

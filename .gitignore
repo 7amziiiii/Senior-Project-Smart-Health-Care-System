@@ -52,8 +52,7 @@ media
 # Backup files #
 *.bak
 *.swp
-*~
-
+*.sqlite3
 # Python #
 *.py[cod]
 *$py.class
@@ -129,3 +128,5 @@ package-lock.json
 # Project specific
 media/
 >>>>>>> 0599a97449a555c297b543125e1ec7da62c37bcb
+Back-End/db.sqlite3
+Back-End/db.sqlite3
