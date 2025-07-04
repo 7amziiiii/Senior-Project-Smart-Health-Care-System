@@ -9,6 +9,7 @@ class OperationSession(models.Model):
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
         ('verified', 'Verified'),
+        ('outbound_cleared', 'Outbound Cleared'),
         ('cancelled', 'Cancelled')
     ]
     

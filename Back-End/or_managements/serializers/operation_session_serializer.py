@@ -41,6 +41,6 @@ class OperationSessionDetailSerializer(serializers.ModelSerializer):
             'id', 'operation_type', 'operation_type_id',
             'operation_room', 'operation_room_id',
             'scheduled_time', 'users',
-            'state', 'state_display', 'created_at', 'updated_at'
+            'state', 'state_display', 'created_at', 'updated_at', 'end_time'
         ]
         read_only_fields = ['created_at', 'updated_at']

@@ -67,6 +67,14 @@ export class AuthService {
       });
     }
     
+    // First, clear any existing tokens to prevent invalid auth states
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
+    
+    // Log the request being made
+    console.log('Sending login request to:', `${this.apiUrl}/auth/login/`);
+    console.log('Login payload:', { username, password: '********' });
+    
     // Real backend implementation
     return this.http.post<any>(`${this.apiUrl}/auth/login/`, { username, password })
       .pipe(
@@ -88,7 +96,10 @@ export class AuthService {
             this.isAuthenticated.next(true);
           }
         }),
-        catchError(this.handleError)
+        catchError(error => {
+          console.error('Login error:', error);
+          return this.handleError(error);
+        })
       );
   }
   

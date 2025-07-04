@@ -166,42 +166,44 @@ class OutboundTrackingService:
         Identify which found items were used in the operation and remain in the room.
         Also identify extra items that weren't used in the operation but are in the room.
         
+        IMPORTANT CHANGE: Both verified used items and extra items are now considered "remaining" 
+        until the room is cleared during outbound tracking.
+        
         Args:
             found_instruments: List of instruments found in the room
             found_trays: List of trays found in the room
             used_items: Dictionary of items used in the operation from verification session
         """
-        # First, get all used instrument and tray IDs
-        used_instrument_ids = set()
-        used_tray_ids = set()
+        # Get lists of used item IDs from the verification session
+        used_instrument_ids = []
+        used_tray_ids = []
         
-        # Get all used instrument IDs
+        # Extract IDs from the used_items dictionary in the verification session
         for name, data in used_items.get('instruments', {}).items():
-            used_instrument_ids.update(data.get('ids', []))
-            
-        # Get all used tray IDs
-        for name, data in used_items.get('trays', {}).items():
-            used_tray_ids.update(data.get('ids', []))
+            used_instrument_ids.extend(data.get('ids', []))
         
-        # Process instruments - strictly by ID
+        for name, data in used_items.get('trays', {}).items():
+            used_tray_ids.extend(data.get('ids', []))
+        
+        # Process all found instruments - BOTH used and extra are now considered "remaining"
         if found_instruments:
-            # Categorize instruments as either 'remaining' (were used in the operation) or 'extra'
             for instrument in found_instruments:
-                if instrument.id in used_instrument_ids:
-                    # This instrument was used in the operation and is still in the room
-                    self.remaining_instruments.append(instrument)
-                    
-                    # Add to remaining_items_dict, grouped by name
-                    if instrument.name not in self.remaining_items_dict['instruments']:
-                        self.remaining_items_dict['instruments'][instrument.name] = {
-                            'quantity': 0,
-                            'ids': []
-                        }
-                    
-                    self.remaining_items_dict['instruments'][instrument.name]['quantity'] += 1
-                    self.remaining_items_dict['instruments'][instrument.name]['ids'].append(instrument.id)
-                else:
-                    # This is an extra instrument - not used in this operation but found in the room
+                # Add instrument to remaining_instruments list regardless of whether it was used
+                self.remaining_instruments.append(instrument)
+                
+                # Add to remaining_items_dict, grouped by name
+                if instrument.name not in self.remaining_items_dict['instruments']:
+                    self.remaining_items_dict['instruments'][instrument.name] = {
+                        'quantity': 0,
+                        'ids': [],
+                        'was_used': instrument.id in used_instrument_ids  # Track if it was used in operation
+                    }
+                
+                self.remaining_items_dict['instruments'][instrument.name]['quantity'] += 1
+                self.remaining_items_dict['instruments'][instrument.name]['ids'].append(instrument.id)
+                
+                # Also track extra items separately for reference (not used in operation but found)
+                if instrument.id not in used_instrument_ids:
                     self.extra_instruments.append(instrument)
                     
                     # Add to extra_items_dict, grouped by name
@@ -214,25 +216,25 @@ class OutboundTrackingService:
                     self.extra_items_dict['instruments'][instrument.name]['quantity'] += 1
                     self.extra_items_dict['instruments'][instrument.name]['ids'].append(instrument.id)
         
-        # Process trays - strictly by ID
+        # Process all found trays - BOTH used and extra are now considered "remaining"
         if found_trays:
-            # Categorize trays as either 'remaining' (were used in the operation) or 'extra'
             for tray in found_trays:
-                if tray.id in used_tray_ids:
-                    # This tray was used in the operation and is still in the room
-                    self.remaining_trays.append(tray)
-                    
-                    # Add to remaining_items_dict, grouped by name
-                    if tray.name not in self.remaining_items_dict['trays']:
-                        self.remaining_items_dict['trays'][tray.name] = {
-                            'quantity': 0,
-                            'ids': []
-                        }
-                    
-                    self.remaining_items_dict['trays'][tray.name]['quantity'] += 1
-                    self.remaining_items_dict['trays'][tray.name]['ids'].append(tray.id)
-                else:
-                    # This is an extra tray - not used in this operation but found in the room
+                # Add tray to remaining_trays list regardless of whether it was used
+                self.remaining_trays.append(tray)
+                
+                # Add to remaining_items_dict, grouped by name
+                if tray.name not in self.remaining_items_dict['trays']:
+                    self.remaining_items_dict['trays'][tray.name] = {
+                        'quantity': 0,
+                        'ids': [],
+                        'was_used': tray.id in used_tray_ids  # Track if it was used in operation
+                    }
+                
+                self.remaining_items_dict['trays'][tray.name]['quantity'] += 1
+                self.remaining_items_dict['trays'][tray.name]['ids'].append(tray.id)
+                
+                # Also track extra items separately for reference (not used in operation but found)
+                if tray.id not in used_tray_ids:
                     self.extra_trays.append(tray)
                     
                     # Add to extra_items_dict, grouped by name
@@ -247,7 +249,10 @@ class OutboundTrackingService:
     
     def _update_operation_session(self):
         """
-        Create an outbound tracking record with room status.
+        Create an outbound tracking record with room status and update operation session state.
+        
+        If the room is empty (no remaining items), the operation session state is 
+        automatically updated to 'outbound_cleared'.
         """
         # Check if any items remain in the room
         is_room_empty = (
@@ -268,6 +273,15 @@ class OutboundTrackingService:
         
         # Save the new record
         outbound_check.save()
+        
+        # Update operation session state if room is empty
+        if is_room_empty:
+            # Only update state if it's not already in a terminal state
+            valid_states_for_transition = ['completed', 'verified']
+            if self.operation_session.state in valid_states_for_transition:
+                logger.info(f"Setting operation session {self.operation_session.id} to 'outbound_cleared' state")
+                self.operation_session.state = 'outbound_cleared'
+                self.operation_session.save(update_fields=['state', 'updated_at'])
         
         # Store this record for reference
         self.outbound_check = outbound_check

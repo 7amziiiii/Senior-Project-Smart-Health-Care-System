@@ -52,7 +52,15 @@ class OutboundTrackingView(APIView):
             operation_session = get_object_or_404(OperationSession, id=operation_session_id)
             
             # Check if operation session is in a state where outbound tracking makes sense
-            if operation_session.state not in ['completed', 'verified']:
+            if operation_session.state == 'outbound_cleared':
+                return Response(
+                    {
+                        "error": f"Room has already been cleared for this operation. "
+                                 "No additional outbound tracking is needed."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            elif operation_session.state not in ['completed', 'verified']:
                 return Response(
                     {
                         "error": f"Cannot perform outbound tracking on operation in '{operation_session.state}' state. "
