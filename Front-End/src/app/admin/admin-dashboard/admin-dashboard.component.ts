@@ -26,14 +26,130 @@ export class AdminDashboardComponent implements OnInit {
   showDashboard = false;
   showInstruments = false;
   
-  // Instrument registration properties
+  // Registration panel properties
   showInstrumentReg = false;
+  showLargeEquipmentReg = false;
+  showTrayReg = false;
+  showReaderReg = false;
+  showOperationTypeReg = false;
   scanningRfid = false;
   rfidFound = false;
   foundRfidId = '';
+  
+  // RFID Reader properties
+  availablePorts = ['COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6'];
+  availableLocations = ['OR Room 1', 'OR Room 2', 'Recovery Room', 'Equipment Room', 'Sterilization Area'];
+  baudRates = [9600, 19200, 38400, 57600, 115200];
+  selectedPort = '';
+  selectedLocation = '';
+  selectedBaudRate: number | null = null;
+  
+  // Operation Type properties
+  operationTypes = ['Appendectomy', 'Cataract Surgery', 'Coronary Bypass', 'Hip Replacement', 'Knee Arthroscopy'];
+  availableInstruments = [
+    { name: 'Scalpel', id: 1 },
+    { name: 'Clamp', id: 2 },
+    { name: 'Forceps', id: 3 },
+    { name: 'Retractor', id: 4 },
+    { name: 'Scissors', id: 5 },
+    { name: 'Needle Holder', id: 6 },
+    { name: 'Suction Tube', id: 7 }
+  ];
+  selectedOperationType = '';
+  selectedInstruments: {id: number, name: string, quantity: number}[] = [];
+  
+  // Methods for Operation Type registration
+  addInstrument(instrument: {id: number, name: string}) {
+    if (!this.isInstrumentSelected(instrument.id)) {
+      this.selectedInstruments.push({...instrument, quantity: 1});
+    }
+  }
+  
+  removeInstrument(instrumentId: number) {
+    this.selectedInstruments = this.selectedInstruments.filter(i => i.id !== instrumentId);
+  }
+  
+  handleInstrumentSelection(event: Event, instrument: {id: number, name: string}) {
+    const checkbox = event.target as HTMLInputElement;
+    if (checkbox && checkbox.checked) {
+      this.addInstrument(instrument);
+    } else {
+      this.removeInstrument(instrument.id);
+    }
+  }
+  
+  handleRemoveInstrument(id: number): void {
+    // Remove from selectedInstruments array
+    this.removeInstrument(id);
+    
+    // Also uncheck the checkbox
+    const checkbox = document.getElementById('instrument-' + id) as HTMLInputElement;
+    if (checkbox) {
+      checkbox.checked = false;
+    }
+  }
+  
+  isInstrumentSelected(instrumentId: number): boolean {
+    return this.selectedInstruments.some(i => i.id === instrumentId);
+  }
+  
+  getInstrumentQuantity(instrumentId: number): number {
+    const instrument = this.selectedInstruments.find(i => i.id === instrumentId);
+    return instrument ? instrument.quantity : 1;
+  }
+  
+  updateInstrumentQuantity(instrumentId: number, quantity: any) {
+    const numQuantity = parseInt(quantity, 10);
+    if (isNaN(numQuantity) || numQuantity < 1) return;
+    
+    const index = this.selectedInstruments.findIndex(i => i.id === instrumentId);
+    if (index !== -1) {
+      this.selectedInstruments[index].quantity = numQuantity;
+    }
+  }
+  
+  // Event handler for quantity input
+  
+  // Event handler for quantity input
+  handleQuantityChange(event: Event, instrumentId: number) {
+    const input = event.target as HTMLInputElement;
+    if (input && input.value) {
+      this.updateInstrumentQuantity(instrumentId, input.value);
+    }
+  }
+  
+  // Increment quantity for an instrument
+  incrementQuantity(instrumentId: number) {
+    const instrument = this.selectedInstruments.find(i => i.id === instrumentId);
+    if (instrument) {
+      instrument.quantity += 1;
+    }
+  }
+  
+  // Decrement quantity for an instrument
+  decrementQuantity(instrumentId: number) {
+    const instrument = this.selectedInstruments.find(i => i.id === instrumentId);
+    if (instrument && instrument.quantity > 1) {
+      instrument.quantity -= 1;
+    }
+  }
+  
+  // Instrument registration properties
+  
+  // Instrument registration properties
   selectedInstrumentType = '';
   newInstrumentStatus = 'available';
   selectedTrayId = '';
+  
+  // Large Equipment registration properties
+  newEquipmentName = '';
+  newEquipmentId = '';
+  newEquipmentType = '';
+  newEquipmentStatus = 'available';
+  newEquipmentNotes = '';
+  
+  // Tray registration properties
+  newTrayType = '';
   
   // Available instrument types
   instrumentTypes = [
@@ -103,14 +219,85 @@ export class AdminDashboardComponent implements OnInit {
     this.showApprovalPanel = false;
     this.showDashboard = false;
     this.showInstruments = false;
-    this.showInstrumentReg = false;
-    this.rfidFound = false;
-    this.resetInstrumentForm();
+    this.hideAllRegistrationForms();
+    this.resetRegistrationForms();
   }
   
-  // Instrument registration methods
+  // Registration panel methods
   showInstrumentRegistration(): void {
+    this.hideAllRegistrationForms();
     this.showInstrumentReg = true;
+    this.resetRegistrationForms();
+  }
+  
+  /**
+   * Shows the large equipment registration form
+   */
+  showLargeEquipmentRegistration(): void {
+    this.hideAllRegistrationForms();
+    this.showLargeEquipmentReg = true;
+    this.resetRegistrationForms();
+  }
+
+  /**
+   * Shows the tray registration form
+   */
+  showTrayRegistration(): void {
+    this.hideAllRegistrationForms();
+    this.showTrayReg = true;
+    this.resetRegistrationForms();
+  }
+
+  /**
+   * Shows the RFID Reader registration form
+   */
+  showReaderRegistration(): void {
+    this.hideAllRegistrationForms();
+    this.showReaderReg = true;
+    this.resetRegistrationForms();
+  }
+
+  /**
+   * Shows the Operation Type registration form
+   */
+  showOperationTypeRegistration(): void {
+    this.hideAllRegistrationForms();
+    this.showOperationTypeReg = true;
+    this.resetRegistrationForms();
+  }
+
+  /**
+   * Hides all registration form panels
+   */
+  private hideAllRegistrationForms(): void {
+    this.showInstrumentReg = false;
+    this.showLargeEquipmentReg = false;
+    this.showTrayReg = false;
+    this.showReaderReg = false;
+    this.showOperationTypeReg = false;
+  }
+
+  /**
+   * Resets all form inputs
+   */
+  private resetRegistrationForms(): void {
+    this.rfidFound = false;
+    this.foundRfidId = '';
+    
+    // Reset instrument form
+    this.selectedInstrumentType = '';
+    this.newInstrumentStatus = 'available';
+    this.selectedTrayId = '';
+    
+    // Reset equipment form
+    this.newEquipmentName = '';
+    this.newEquipmentId = '';
+    this.newEquipmentType = '';
+    this.newEquipmentStatus = 'available';
+    this.newEquipmentNotes = '';
+    
+    // Reset tray form
+    this.newTrayType = '';
   }
   
   scanForRfid(): void {
@@ -153,14 +340,69 @@ export class AdminDashboardComponent implements OnInit {
   
   cancelRegistration(): void {
     this.rfidFound = false;
-    this.resetInstrumentForm();
+    this.resetRegistrationForms();
   }
   
+  /**
+   * @deprecated Use resetRegistrationForms() instead
+   */
   resetInstrumentForm(): void {
+    // Keep this for backward compatibility
     this.foundRfidId = '';
     this.selectedInstrumentType = '';
     this.newInstrumentStatus = 'available';
     this.selectedTrayId = '';
+  }
+  
+  /**
+   * Save a large equipment registration with RFID tag
+   */
+  saveLargeEquipment(): void {
+    if (!this.newEquipmentName || !this.newEquipmentId || !this.newEquipmentType) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    const equipment = {
+      id: Math.floor(1000 + Math.random() * 9000),
+      rfidTagId: this.foundRfidId,
+      name: this.newEquipmentName,
+      equipment_id: this.newEquipmentId,
+      equipment_type: this.newEquipmentType,
+      status: this.newEquipmentStatus,
+      notes: this.newEquipmentNotes
+    };
+    
+    // Simulate saving the equipment
+    console.log('Saving large equipment:', equipment);
+    alert(`Large equipment ${equipment.name} registered successfully with RFID tag ${equipment.rfidTagId}`);
+    
+    // Reset the form
+    this.resetRegistrationForms();
+  }
+  
+  /**
+   * Save a tray registration with RFID tag
+   */
+  saveTray(): void {
+    if (!this.newTrayType) {
+      alert('Please select a tray type');
+      return;
+    }
+    
+    const tray = {
+      id: 'tray-' + Math.floor(100 + Math.random() * 900),
+      rfidTagId: this.foundRfidId,
+      type: this.newTrayType,
+      name: `${this.newTrayType} Tray ${Math.floor(100 + Math.random() * 900)}`
+    };
+    
+    // Simulate saving the tray
+    console.log('Saving tray:', tray);
+    alert(`Tray ${tray.name} registered successfully with RFID tag ${tray.rfidTagId}`);
+    
+    // Reset the form
+    this.resetRegistrationForms();
   }
   
   loadPendingUsers(): void {
