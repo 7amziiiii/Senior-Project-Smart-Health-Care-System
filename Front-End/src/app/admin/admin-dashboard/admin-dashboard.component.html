@@ -1,29 +1,39 @@
 <div class="admin-container">
   <div class="admin-header">
-    <h1>Admin Dashboard</h1>
-    <div class="simulation-mode">Simulation Mode: Simulated in frontend</div>
-    <button class="logout-btn" (click)="logout()">Logout</button>
+    <h1><i class="fas fa-hospital-user"></i> Admin Dashboard</h1>
+    <div class="simulation-mode"><i class="fas fa-code"></i> Simulation Mode: Simulated in frontend</div>
+    <button class="logout-btn" (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
   </div>
 
+  <!-- Admin Options (main navigation) -->
   <div class="admin-options" *ngIf="!showApprovalPanel && !showDashboard && !showInstruments">
     <div class="option-card" (click)="navigateToPanel('approval')">
-      <h2>Admin Panel</h2>
+      <h2><i class="fas fa-user-check"></i> User Management</h2>
       <div class="option-content">
-        <p>Manage user registrations and approvals</p>
+        <p>Review and approve user registrations</p>
+        <div class="card-footer">
+          <span class="action-hint">Manage approvals <i class="fas fa-arrow-right"></i></span>
+        </div>
       </div>
     </div>
     
     <div class="option-card" (click)="navigateToPanel('dashboard')">
-      <h2>OR Dashboard</h2>
+      <h2><i class="fas fa-procedures"></i> OR Dashboard</h2>
       <div class="option-content">
-        <p>View surgeries and OR management</p>
+        <p>Monitor surgeries and operating room activity</p>
+        <div class="card-footer">
+          <span class="action-hint">View dashboard <i class="fas fa-arrow-right"></i></span>
+        </div>
       </div>
     </div>
     
     <div class="option-card" (click)="navigateToPanel('instruments')">
-      <h2>Registration Stuff</h2>
+      <h2><i class="fas fa-briefcase-medical"></i> Asset Management</h2>
       <div class="option-content">
-        <p>Register instruments, RFID tags, and equipment</p>
+        <p>Register and manage instruments, trays, and large equipment with RFID tracking</p>
+        <div class="card-footer">
+          <span class="action-hint">Manage assets <i class="fas fa-arrow-right"></i></span>
+        </div>
       </div>
     </div>
   </div>
@@ -31,8 +41,8 @@
   <!-- User Approval Panel -->
   <div class="panel-container" *ngIf="showApprovalPanel">
     <div class="panel-header">
-      <button class="back-btn" (click)="backToMainMenu()">Back</button>
-      <h2>User Registration Approval</h2>
+      <button class="back-btn" (click)="backToMainMenu()"><i class="fas fa-arrow-left"></i> Back</button>
+      <h2><i class="fas fa-user-check"></i> User Registration Approval</h2>
     </div>
     
     <div class="approval-section">
@@ -89,27 +99,40 @@
   <!-- OR Dashboard -->
   <div class="panel-container" *ngIf="showDashboard">
     <div class="panel-header">
-      <button class="back-btn" (click)="backToMainMenu()">Back</button>
-      <h2>OR Dashboard</h2>
+      <button class="back-btn" (click)="backToMainMenu()"><i class="fas fa-arrow-left"></i> Back</button>
+      <h2><i class="fas fa-procedures"></i> OR Dashboard</h2>
     </div>
     
     <div class="dashboard-content">
       <p>Redirecting to OR Dashboard...</p>
+      <i class="fas fa-spinner fa-spin"></i>
     </div>
   </div>
   
-  <!-- Instrument Registration -->
+  <!-- Instruments Registration -->
   <div class="panel-container" *ngIf="showInstruments">
     <div class="panel-header">
-      <button class="back-btn" (click)="backToMainMenu()">Back</button>
-      <h2>Registration Stuff</h2>
+      <button class="back-btn" (click)="backToMainMenu()"><i class="fas fa-arrow-left"></i> Back</button>
+      <h2><i class="fas fa-briefcase-medical"></i> Asset Management</h2>
     </div>
     
     <div class="instruments-container">
-      <div class="instruments-options">
-        <button class="option-btn" (click)="showInstrumentRegistration()">Instrument Registration</button>
-        <button class="option-btn disabled">Large Equipment (Coming Soon)</button>
-        <button class="option-btn disabled">Tray Registration (Coming Soon)</button>
+      <div class="admin-options-horizontal">
+        <button class="option-btn" (click)="showInstrumentRegistration()">
+          <i class="fas fa-medkit"></i> Instrument Registration
+        </button>
+        <button class="option-btn" (click)="showLargeEquipmentRegistration()">
+          <i class="fas fa-cogs"></i> Large Equipment Registration
+        </button>
+        <button class="option-btn" (click)="showTrayRegistration()">
+          <i class="fas fa-boxes"></i> Tray Registration
+        </button>
+        <button class="option-btn" (click)="showReaderRegistration()">
+          <i class="fas fa-rss"></i> RFID Reader Registration
+        </button>
+        <button class="option-btn" (click)="showOperationTypeRegistration()">
+          <i class="fas fa-procedures"></i> Operation Type Registration
+        </button>
       </div>
       
       <div class="instrument-registration" *ngIf="showInstrumentReg">
@@ -159,6 +182,193 @@
           </div>
         </div>
       </div>
+      
+      <!-- Large Equipment Registration -->
+      <div class="large-equipment-registration" *ngIf="showLargeEquipmentReg">
+        <h3>Large Equipment Registration</h3>
+        <div class="scan-section">
+          <button [disabled]="scanningRfid" class="scan-btn" (click)="scanForRfid()">
+            <span *ngIf="!scanningRfid">Scan for RFID Tag</span>
+            <span *ngIf="scanningRfid">Scanning...</span>
+          </button>
+        </div>
+        
+        <div *ngIf="rfidFound" class="registration-form">
+          <div class="form-group">
+            <label>RFID Tag ID:</label>
+            <input type="text" [value]="foundRfidId" readonly>
+          </div>
+          
+          <div class="form-group">
+            <label>Equipment Name:</label>
+            <input type="text" [(ngModel)]="newEquipmentName" placeholder="Enter equipment name">
+          </div>
+          
+          <div class="form-group">
+            <label>Equipment ID:</label>
+            <input type="text" [(ngModel)]="newEquipmentId" placeholder="Enter unique equipment ID">
+          </div>
+          
+          <div class="form-group">
+            <label>Equipment Type:</label>
+            <select [(ngModel)]="newEquipmentType">
+              <option value="">Select equipment type</option>
+              <option value="C-Arm">C-Arm</option>
+              <option value="Microscope">Microscope</option>
+              <option value="Ultrasound">Ultrasound</option>
+              <option value="Ventilator">Ventilator</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Status:</label>
+            <select [(ngModel)]="newEquipmentStatus">
+              <option value="available">Available</option>
+              <option value="in_use">In Use</option>
+              <option value="under_repair">Under Repair</option>
+              <option value="scheduled_maintenance">Scheduled Maintenance</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Notes (Optional):</label>
+            <textarea [(ngModel)]="newEquipmentNotes" placeholder="Enter any additional notes"></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button class="submit-btn" (click)="saveLargeEquipment()">Register Equipment</button>
+            <button class="cancel-btn" (click)="cancelRegistration()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tray Registration -->
+      <div class="tray-registration" *ngIf="showTrayReg">
+        <h3>Tray Registration</h3>
+        <div class="scan-section">
+          <button [disabled]="scanningRfid" class="scan-btn" (click)="scanForRfid()">
+            <span *ngIf="!scanningRfid">Scan for RFID Tag</span>
+            <span *ngIf="scanningRfid">Scanning...</span>
+          </button>
+        </div>
+        
+        <div *ngIf="rfidFound" class="registration-form">
+          <div class="form-group">
+            <label>RFID Tag ID:</label>
+            <input type="text" [value]="foundRfidId" readonly>
+          </div>
+          
+          <div class="form-group">
+            <label>Tray Type:</label>
+            <select [(ngModel)]="newTrayType">
+              <option value="">Select tray type</option>
+              <option value="General">General</option>
+              <option value="Orthopedic">Orthopedic</option>
+              <option value="Neurological">Neurological</option>
+              <option value="Cardiac">Cardiac</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-actions">
+            <button class="submit-btn" (click)="saveTray()">Register Tray</button>
+            <button class="cancel-btn" (click)="cancelRegistration()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- RFID Reader Registration -->
+    <div class="registration-panel" *ngIf="showReaderReg">
+      <h2><i class="fas fa-rss"></i> RFID Reader Registration</h2>
+      
+      <div class="registration-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="port">Port</label>
+            <select id="port" [(ngModel)]="selectedPort" required>
+              <option value="">Select Port</option>
+              <option *ngFor="let port of availablePorts" [value]="port">{{port}}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="location">Location</label>
+            <select id="location" [(ngModel)]="selectedLocation" required>
+              <option value="">Select Location</option>
+              <option *ngFor="let location of availableLocations" [value]="location">{{location}}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="baudrate">Baud Rate</label>
+            <select id="baudrate" [(ngModel)]="selectedBaudRate" required>
+              <option [ngValue]="null">Select Baud Rate</option>
+              <option *ngFor="let rate of baudRates" [ngValue]="rate">{{rate}}</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button class="submit-btn" [disabled]="!selectedPort || !selectedLocation || !selectedBaudRate">
+            <i class="fas fa-save"></i> Register Reader
+          </button>
+          <button class="cancel-btn" (click)="cancelRegistration()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+      
+      <!-- Operation Type Registration Form -->
+    <div class="registration-panel" *ngIf="showOperationTypeReg">
+      <h2><i class="fas fa-procedures"></i> Operation Type Registration</h2>
+      
+      <div class="registration-form">
+        <div class="form-group">
+          <label for="operationType">Operation Type</label>
+          <select id="operationType" [(ngModel)]="selectedOperationType" required>
+            <option value="">Select Operation Type</option>
+            <option *ngFor="let opType of operationTypes" [value]="opType">{{opType}}</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Required Instruments</label>
+          <div class="instruments-grid">
+            <div class="instrument-row" *ngFor="let instrument of availableInstruments">
+              <div class="instrument-check">
+                <input type="checkbox" [id]="'instrument-' + instrument.id" (change)="handleInstrumentSelection($event, instrument)">
+                <label [for]="'instrument-' + instrument.id">{{instrument.name}}</label>
+              </div>
+              <div class="quantity-controls" *ngIf="isInstrumentSelected(instrument.id)">
+                <button type="button" (click)="decrementQuantity(instrument.id)">-</button>
+                <input type="number" min="1" [value]="getInstrumentQuantity(instrument.id)" (input)="handleQuantityChange($event, instrument.id)">
+                <button type="button" (click)="incrementQuantity(instrument.id)">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group selected-summary" *ngIf="selectedInstruments.length > 0">
+          <label>Selected Instruments</label>
+          <ul class="selected-items">
+            <li *ngFor="let instrument of selectedInstruments">
+              {{instrument.name}} × {{instrument.quantity}}
+            </li>
+          </ul>
+        </div>
+        
+        <div class="form-actions">
+          <button class="submit-btn" [disabled]="!selectedOperationType || selectedInstruments.length === 0">
+            <i class="fas fa-save"></i> Register Operation Type
+          </button>
+          <button class="cancel-btn" (click)="cancelRegistration()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
     </div>
   </div>
 </div>

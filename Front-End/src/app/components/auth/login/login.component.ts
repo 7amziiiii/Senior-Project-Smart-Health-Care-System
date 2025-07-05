@@ -37,7 +37,12 @@ export class LoginComponent {
 
     this.authService.login(username, password).subscribe({
       next: () => {
-        this.router.navigate(['/dashboard']);
+        // Check if the user is an admin and redirect accordingly
+        if (this.authService.isAdmin()) {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         this.errorMessage = err.error?.message || 'Login failed. Please try again.';

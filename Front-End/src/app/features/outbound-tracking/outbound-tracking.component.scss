@@ -1,0 +1,327 @@
+.container {
+  font-family: 'Arial', sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 80px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 25px;
+  
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #2a3eb1;
+    font-weight: 600;
+  }
+  
+  .back-button {
+    background-color: transparent;
+    border: none;
+    color: #2a3eb1;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 15px;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    
+    i {
+      margin-right: 8px;
+    }
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #2a3eb1;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+.surgeries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  
+  .list-section {
+    h2 {
+      font-size: 20px;
+      color: #424242;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .no-data {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+      
+      p {
+        color: #757575;
+        margin: 0;
+      }
+    }
+  }
+  
+  .surgery-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    transition: transform 0.2s, box-shadow 0.2s;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    }
+    
+    h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #2a3eb1;
+      font-size: 18px;
+    }
+    
+    .surgery-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      
+      p {
+        margin: 5px 0;
+        font-size: 14px;
+      }
+      
+      .status {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
+        margin-top: 10px;
+        
+        &.in-progress {
+          background-color: #fff8e1;
+          color: #f57f17;
+        }
+        
+        &.completed {
+          background-color: #e8f5e9;
+          color: #2e7d32;
+        }
+      }
+    }
+  }
+}
+
+.outbound-tracking {
+  .status-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    
+    h2 {
+      margin-top: 0;
+      color: #2a3eb1;
+      font-size: 20px;
+      margin-bottom: 15px;
+    }
+    
+    .description {
+      margin-bottom: 25px;
+      color: #616161;
+      line-height: 1.5;
+    }
+  }
+  
+  .scan-action {
+    text-align: center;
+    padding: 30px 0;
+  }
+  
+  .scanning-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 0;
+    
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid #2a3eb1;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    p {
+      color: #616161;
+    }
+  }
+  
+  .scan-result {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    
+    .result-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    h3 {
+      margin: 0 0 10px 0;
+      font-size: 20px;
+    }
+    
+    p {
+      color: #616161;
+      margin-bottom: 20px;
+    }
+    
+    &.cleared {
+      background-color: #e8f5e9;
+      
+      .result-icon {
+        color: #2e7d32;
+      }
+      
+      h3 {
+        color: #2e7d32;
+      }
+    }
+    
+    &.not-cleared {
+      background-color: #fff8e1;
+      
+      .result-icon {
+        color: #f57f17;
+      }
+      
+      h3 {
+        color: #f57f17;
+      }
+    }
+  }
+  
+  .remaining-items {
+    margin: 20px 0;
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      
+      th {
+        background-color: #f5f5f5;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 14px;
+        color: #424242;
+      }
+      
+      td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 14px;
+      }
+      
+      tr:last-child td {
+        border-bottom: none;
+      }
+    }
+  }
+  
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+  }
+}
+
+.primary-button {
+  background-color: #2a3eb1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  
+  i {
+    margin-right: 8px;
+  }
+  
+  &:hover {
+    background-color: #1c2e85;
+  }
+}
+
+.secondary-button {
+  background-color: #f5f5f5;
+  color: #424242;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #e0e0e0;
+  }
+}
+
+.small-button {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #c8e6c9;
+  }
+}

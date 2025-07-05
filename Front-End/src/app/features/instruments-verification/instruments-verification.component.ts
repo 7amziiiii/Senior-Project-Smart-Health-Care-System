@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { SurgeryDataService, Surgery, Instrument } from '../../services/surgery-data.service';
 import { VerificationService, VerificationStatus } from '../../services/verification.service';
@@ -8,7 +8,7 @@ import { VerificationService, VerificationStatus } from '../../services/verifica
 @Component({
   selector: 'app-instruments-verification',
   standalone: true,
-  imports: [RouterLink, CommonModule],
+  imports: [CommonModule],
   templateUrl: './instruments-verification.component.html',
   styleUrls: ['./instruments-verification.component.scss']
 })
@@ -17,11 +17,13 @@ export class InstrumentsVerificationComponent implements OnInit, OnDestroy {
   selectedSurgery: Surgery | null = null;
   verificationStatus: VerificationStatus | null = null;
   isVerifying: boolean = false;
+  activeTab: 'missing' | 'present' | 'extra' | 'all' = 'missing';
   private subscriptions: Subscription[] = [];
   
   constructor(
     private surgeryDataService: SurgeryDataService,
-    private verificationService: VerificationService
+    private verificationService: VerificationService,
+    private router: Router
   ) {}
   
   ngOnInit(): void {
@@ -109,5 +111,18 @@ export class InstrumentsVerificationComponent implements OnInit, OnDestroy {
     if (!itemsMap) return 0;
     
     return Object.values(itemsMap).reduce((sum, count) => sum + (typeof count === 'number' ? count : 0), 0);
+  }
+  
+  /**
+   * Navigate back to features selection view while maintaining selected surgery context
+   */
+  backToFeatures(): void {
+    // Navigate to dashboard with query params to show features and preserve selected surgery
+    this.router.navigate(['/dashboard'], { 
+      queryParams: { 
+        showFeatures: true,
+        keepSurgeryContext: true 
+      }
+    });
   }
 }

@@ -1,272 +1,604 @@
+// Main container styles
 .dashboard-container {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f9f9f9;
+  background-color: #f8f9fa;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
+// Dashboard header styles
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e9ecef;
+  
+  .header-left {
+    h2 {
+      margin: 0;
+      color: #212529;
+      font-size: 1.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      
+      i {
+        color: #0d6efd;
+        margin-right: 0.75rem;
+      }
+    }
+  }
   
   .header-right {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 1rem;
+  }
+}
+
+// Button styles
+.logout-btn, .admin-btn, .secondary-btn {
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+
+  i {
+    font-size: 0.875rem;
   }
   
-  h2 {
-    margin: 0;
-    color: #333;
-    font-size: 1.8rem;
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   }
 }
 
 .logout-btn {
-  background-color: #f44336;
+  background-color: #dc3545;
   color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  
-  &:before {
-    content: '\f2f5'; /* Font Awesome logout icon */
-    font-family: 'Font Awesome 5 Free';
-    margin-right: 8px;
-    font-weight: 900;
-  }
   
   &:hover {
-    background-color: #d32f2f; /* Pre-computed darker red instead of using darken() */
-    transform: translateY(-1px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-  }
-  
-  &:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background-color: #c82333;
   }
 }
 
 .admin-btn {
-  background-color: #3f51b5;
+  background-color: #0d6efd;
   color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  
-  &:before {
-    content: '\f013'; /* Font Awesome cog/settings icon */
-    font-family: 'Font Awesome 5 Free';
-    margin-right: 8px;
-    font-weight: 900;
-  }
   
   &:hover {
-    background-color: #303f9f;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-  }
-  
-  &:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background-color: #0b5ed7;
   }
 }
 
+.secondary-btn {
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  
+  &:hover {
+    background-color: #e9ecef;
+  }
+}
+
+// Dashboard content area
 .dashboard-content {
   flex-grow: 1;
   
   h3 {
     margin-top: 0;
-    color: #333;
-    margin-bottom: 0.5rem;
+    color: #212529;
+    margin-bottom: 0.75rem;
     font-size: 1.5rem;
+    font-weight: 600;
   }
   
   p {
-    color: #666;
-    margin-bottom: 1.5rem;
+    color: #6c757d;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
   }
+}
+
+// View header styles
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.75rem;
   
-  .page-title {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
+  .view-title {
+    h3 {
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #212529;
+      font-size: 1.5rem;
+    }
     
     .subtitle {
-      margin-bottom: 0;
-      font-size: 1rem;
-      color: #777;
+      margin: 0;
+      font-size: 0.95rem;
+      color: #6c757d;
     }
   }
   
-  .section-headers {
-    margin: 1.5rem 0 0.5rem 0;
+  .view-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+// Search container
+.search-container {
+  position: relative;
+  
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+  }
+  
+  .search-input {
+    padding: 0.65rem 1rem 0.65rem 2.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    min-width: 240px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     
-    .section-title {
-      font-size: 1.1rem;
-      color: #555;
-      margin: 0 0 0.5rem 0;
-      font-weight: 500;
+    &:focus {
+      outline: none;
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    &::placeholder {
+      color: #adb5bd;
     }
   }
 }
 
-.surgeries-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-  
-  .surgery-item {
+// Operations view
+.operations-view {
+  .view-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: white;
-    border-left: 4px solid #03a9f4;
-    border-radius: 4px;
-    padding: 1rem 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: all 0.2s ease;
+    margin-bottom: 1.5rem;
     
-    &:hover {
-      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-      transform: translateY(-2px);
-    }
-    
-    .surgery-info {
-      flex: 1;
-      
-      h4 {
-        margin: 0.5rem 0;
-        font-size: 1.1rem;
-        color: #333;
-      }
-      
-      p {
+    .view-title {
+      h3 {
         margin: 0;
-        color: #666;
-        font-size: 0.9rem;
-      }
-      
-      .surgery-status {
-        display: inline-block;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 0.25rem 0.5rem;
-        border-radius: 20px;
-        letter-spacing: 0.5px;
-        
-        &.ongoing {
-          background-color: #e3f2fd;
-          color: #1976d2;
-        }
-        
-        &.upcoming {
-          background-color: #e8f5e9;
-          color: #388e3c;
-        }
+        color: #0a2344;
+        font-size: 1.4rem;
+        font-weight: 500;
       }
     }
     
-    .surgery-action {
-      .select-btn {
-        display: inline-block;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        background-color: #f1f1f1;
-        transition: all 0.2s ease;
-        color: #555;
-        font-size: 0.9rem;
-      }
-      
-      &:hover .select-btn {
-        background-color: #e0e0e0;
+    .view-actions {
+      .search-bar {
+        position: relative;
+        
+        input {
+          padding: 0.5rem 2.2rem 0.5rem 0.8rem;
+          border-radius: 4px;
+          border: 1px solid #ced4da;
+          width: 220px;
+          font-size: 0.875rem;
+          background-color: #fff;
+          transition: all 0.2s;
+          
+          &:focus {
+            outline: none;
+            border-color: #4ca8ff;
+            box-shadow: 0 0 0 2px rgba(76, 168, 255, 0.15);
+          }
+        }
+        
+        i {
+          position: absolute;
+          right: 0.8rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #6c757d;
+          pointer-events: none;
+        }
       }
     }
   }
-}
-
-.back-button {
-  margin-top: 2rem;
-  text-align: center;
   
-  button {
-    background-color: #607d8b;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
+  // Operations section
+  .operations-section {
+    margin-bottom: 1.5rem;
+    background: white;
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    transition: background-color 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
     
-    &:hover {
-      background-color: #455a64;
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+      
+      .section-title {
+        display: flex;
+        align-items: center;
+        
+        h4 {
+          margin: 0;
+          font-size: 0.8rem;
+          letter-spacing: 0.5px;
+          font-weight: 600;
+          color: #495057;
+        }
+      }
+      
+      .operation-count {
+        background-color: #e9ecef;
+        color: #495057;
+        border-radius: 3px;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+    }
+    
+    // Operations list - NEW tabular format
+    .operations-list {
+      .no-data-message {
+        text-align: center;
+        padding: 1.5rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+      }
+      
+      .operation-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #e9ecef;
+        transition: background-color 0.15s;
+        cursor: pointer;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        &:hover {
+          background-color: #f1f4f8;
+        }
+        
+        &.active {
+          border-left: 4px solid #0d6efd;
+        }
+        
+        &.scheduled {
+          border-left: 4px solid #6c757d;
+        }
+        
+        .operation-info {
+          flex: 1;
+          
+          .operation-name {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: #212529;
+            font-size: 0.95rem;
+          }
+          
+          .operation-details {
+            display: flex;
+            gap: 1.2rem;
+            
+            .detail {
+              color: #6c757d;
+              font-size: 0.8rem;
+              display: flex;
+              align-items: center;
+              
+              i {
+                margin-right: 0.4rem;
+                font-size: 0.85rem;
+                width: 14px;
+              }
+            }
+          }
+        }
+        
+        .operation-actions {
+          .select-btn {
+            background-color: transparent;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            color: #495057;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            
+            &:hover {
+              background-color: #f8f9fa;
+              border-color: #ced4da;
+            }
+          }
+        }
+      }
     }
   }
 }
 
-.feature-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+// Features view styles
+.features-view {
+  .view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    background: #ffffff;
+    border-radius: 4px;
+    border-left: 4px solid #0a2344;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    
+    .view-title {
+      .surgery-info {
+        h3 {
+          margin: 0 0 0.2rem;
+          font-size: 1.2rem;
+          color: #0a2344;
+          font-weight: 500;
+        }
+        
+        .surgery-meta {
+          display: flex;
+          gap: 1rem;
+          color: #6c757d;
+          font-size: 0.8rem;
+          
+          .meta-item {
+            display: flex;
+            align-items: center;
+          }
+        }
+      }
+    }
+    
+    .view-actions {
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.8rem;
+        background-color: transparent;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+        transition: all 0.15s;
+        cursor: pointer;
+        font-size: 0.8rem;
+        
+        &:hover {
+          background-color: #f1f4f8;
+          border-color: #ced4da;
+        }
+      }
+    }
+  }
+  
+  // Tools panel - modern, clean layout
+  .tools-panel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    
+    .tool-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      width: 220px;
+      height: 180px;
+      padding: 1.5rem;
+      border-radius: 12px;
+      transition: all 0.2s;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      
+      &:before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4ca8ff, #2b6cb0);
+        transition: all 0.3s;
+        opacity: 0.7;
+      }
+      
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        
+        &:before {
+          height: 6px;
+          opacity: 1;
+        }
+        
+        .tool-icon {
+          transform: scale(1.1);
+        }
+      }
+      
+      .tool-icon {
+        font-size: 2.5rem;
+        color: #3182ce;
+        margin-bottom: 1.5rem;
+        background: #ebf8ff;
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+      }
+      
+      .tool-label {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1a365d;
+      }
+    }
+  }
 }
 
+// Feature card styles
 .feature-card {
   background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  padding: 1.5rem;
-  width: calc(33.333% - 1rem);
-  min-width: 250px;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
   
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
   .feature-icon {
-    font-size: 2rem;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 1rem;
+    font-size: 1.5rem;
+    
+    &.instruments {
+      background-color: rgba(13, 110, 253, 0.1);
+      color: #0d6efd;
+    }
+    
+    &.outbound {
+      background-color: rgba(220, 53, 69, 0.1);
+      color: #dc3545;
+    }
+    
+    &.equipment {
+      background-color: rgba(25, 135, 84, 0.1);
+      color: #198754;
+    }
   }
   
-  h4 {
-    margin-top: 0;
-    color: #2196f3;
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
+  .feature-content {
+    padding: 1.5rem;
+    flex-grow: 1;
+    
+    h4 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #212529;
+    }
+    
+    p {
+      margin: 0 0 1.25rem 0;
+      color: #6c757d;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+    }
+    
+    .feature-benefits {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      
+      li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        color: #495057;
+        
+        i {
+          color: #198754;
+          font-size: 0.75rem;
+        }
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
   }
   
-  p {
-    margin: 0;
-    color: #666;
-    font-size: 0.9rem;
+  .feature-action {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    
+    .action-text {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #0d6efd;
+    }
+    
+    i {
+      color: #0d6efd;
+      font-size: 0.875rem;
+      transition: transform 0.2s ease;
+    }
   }
+  
+  &:hover .feature-action i {
+    transform: translateX(4px);
+  }
+}
+
+// Fix for line-clamp property
+.description {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
