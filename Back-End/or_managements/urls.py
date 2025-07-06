@@ -51,6 +51,7 @@ from .views.trays.tray_views import (
 from .views.verification.verification_views import VerificationViewSet
 from .views.verification.outbound_tracking_views import OutboundTrackingViewSet
 from .views.log import OutboundTrackingList
+from .views.ml_views import equipment_usage_logs, equipment_maintenance_history, procedure_stats
 
 # Router for API endpoints
 router = DefaultRouter()
@@ -105,7 +106,12 @@ urlpatterns = [
     # Access via /outbound-tracking/{operation_session_id}/status/
 
     # Outbound Tracking URLs
-    path('outbound-tracking/', OutboundTrackingList.as_view(), name='outbound-tracking- list'),
+    path('outbound-tracking/', OutboundTrackingList.as_view(), name='outbound-tracking-list'),
+    
+    # ML API Endpoints
+    path('ml/equipment/usage/', equipment_usage_logs, name='ml-equipment-usage'),
+    path('ml/equipment/maintenance/', equipment_maintenance_history, name='ml-equipment-maintenance'),
+    path('ml/procedures/stats/', procedure_stats, name='ml-procedure-stats'),
     
     # Include router URLs for viewsets
     path('', include(router.urls)),
