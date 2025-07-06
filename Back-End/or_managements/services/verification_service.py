@@ -70,7 +70,6 @@ class VerificationService:
         self.missing_items_dict = {"instruments": {}, "trays": {}}
         self.extra_items_dict = {"instruments": {}, "trays": {}}
         self.available_items_dict = {"instruments": {}, "trays": {}}
-        self.required_items_status = {"instruments": {}, "trays": {}}
     
     def perform_verification(self, scan_duration=2):
         """
@@ -97,9 +96,8 @@ class VerificationService:
         self.missing_items_dict = {"instruments": {}, "trays": {}}
         self.extra_items_dict = {"instruments": {}, "trays": {}}
         self.available_items_dict = {"instruments": {}, "trays": {}}
-        self.required_items_status = {"instruments": {}, "trays": {}}
         
-        # Get required items for this operation
+        # Get required instruments and trays by name
         required_instrument_names, required_tray_names = self._get_required_items()
         
         # Scan for tags
@@ -115,9 +113,6 @@ class VerificationService:
             required_instrument_names,
             required_tray_names
         )
-        
-        # Track all required items with their presence status
-        self._track_required_items_status(found_instruments, found_trays, required_instrument_names, required_tray_names)
         
         # Update item states
         self._update_item_states()
@@ -490,77 +485,6 @@ class VerificationService:
         # Save changes to database
         self.verification_session.save()
     
-    def _track_required_items_status(self, found_instruments, found_trays, required_instrument_names, required_tray_names):
-        """
-        Track all required instruments and trays, indicating whether each is present in the room.
-        
-        Args:
-            found_instruments: List of instruments found in the room
-            found_trays: List of trays found in the room
-            required_instrument_names: Dict mapping required instrument names to quantities
-            required_tray_names: Dict mapping required tray names to quantities
-        """
-        # Group found instruments and trays by name for easier checking
-        found_instruments_by_name = {}
-        for instrument in found_instruments:
-            if instrument.name not in found_instruments_by_name:
-                found_instruments_by_name[instrument.name] = []
-            found_instruments_by_name[instrument.name].append(instrument)
-            
-        found_trays_by_name = {}
-        for tray in found_trays:
-            if tray.name not in found_trays_by_name:
-                found_trays_by_name[tray.name] = []
-            found_trays_by_name[tray.name].append(tray)
-        
-        # Process required instruments
-        for name, required_qty in required_instrument_names.items():
-            found_qty = len(found_instruments_by_name.get(name, []))
-            
-            # Get all instruments with this name from database
-            all_instruments = list(Instrument.objects.filter(name=name))
-            
-            # Track each instrument by ID
-            for instrument in all_instruments:
-                is_in_room = instrument in found_instruments
-                
-                # Add to required_items_status
-                if name not in self.required_items_status["instruments"]:
-                    self.required_items_status["instruments"][name] = {
-                        "required_quantity": required_qty,
-                        "found_quantity": found_qty,
-                        "items": []
-                    }
-                
-                self.required_items_status["instruments"][name]["items"].append({
-                    "id": instrument.id,
-                    "is_in_room": is_in_room
-                })
-        
-        # Process required trays
-        for name, required_qty in required_tray_names.items():
-            found_qty = len(found_trays_by_name.get(name, []))
-            
-            # Get all trays with this name from database
-            all_trays = list(Tray.objects.filter(name=name))
-            
-            # Track each tray by ID
-            for tray in all_trays:
-                is_in_room = tray in found_trays
-                
-                # Add to required_items_status
-                if name not in self.required_items_status["trays"]:
-                    self.required_items_status["trays"][name] = {
-                        "required_quantity": required_qty,
-                        "found_quantity": found_qty,
-                        "items": []
-                    }
-                
-                self.required_items_status["trays"][name]["items"].append({
-                    "id": tray.id,
-                    "is_in_room": is_in_room
-                })
-    
     def _format_result(self):
         """
         Format result for API response using name-quantity based categorization.
@@ -575,6 +499,5 @@ class VerificationService:
             "missing_items": self.missing_items_dict,
             "extra_items": self.extra_items_dict,
             "available_items": self.available_items_dict,
-            "required_items_status": self.required_items_status,
             "available_matches": self.verification_session.available_matches
         }
