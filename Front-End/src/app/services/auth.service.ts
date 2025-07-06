@@ -13,7 +13,7 @@ export class AuthService {
   private readonly USER_KEY = 'auth_user';
   private apiUrl = environment.apiUrl;
   private isAuthenticated = new BehaviorSubject<boolean>(this.hasToken());
-  private simulationMode = false; // DISABLED to use real token authentication
+  private simulationMode = true; // Temporarily enabled for maintenance dashboard testing // DISABLED to use real token authentication
   
   constructor(private http: HttpClient, private router: Router) {
     // Clear any simulated tokens when starting in real mode
@@ -44,16 +44,31 @@ export class AuthService {
       // Simulate successful login for any username/password
       const simulatedToken = 'simulated-token-' + Date.now();
       
-      // Check if the user is an admin
-      const isAdmin = username === 'admin' || username === 'itguy';
+      // Determine user role based on username
+      let role = 'staff';
+      let isStaff = false;
+      let isSuperuser = false;
+      
+      // Assign roles based on username
+      if (username === 'admin') {
+        role = 'admin';
+        isStaff = true;
+        isSuperuser = true;
+      } else if (username === 'itguy') {
+        role = 'it_admin';
+        isStaff = true;
+      } else if (username === 'main') {
+        role = 'maintenance';
+        isStaff = true;
+      }
       
       // Create user data based on username
       const userData = {
         username: username,
-        is_staff: isAdmin,
-        is_superuser: username === 'admin',
-        role: username === 'itguy' ? 'it_admin' : 'staff',
-        profile: { role: username === 'itguy' ? 'it_admin' : 'staff' }
+        is_staff: isStaff,
+        is_superuser: isSuperuser,
+        role: role,
+        profile: { role: role }
       };
       
       // Store auth data
@@ -188,6 +203,10 @@ export class AuthService {
   getUserData(): any {
     const userData = localStorage.getItem(this.USER_KEY);
     return userData ? JSON.parse(userData) : null;
+  }
+  
+  getCurrentUser(): any {
+    return this.getUserData();
   }
   
   isAdmin(): boolean {
