@@ -49,17 +49,15 @@ from .views.trays.tray_views import (
     TrayRetrieveUpdateDestroyView
 )
 from .views.verification_views import VerificationViewSet
-from .views.outbound_tracking_views import (
-    OutboundTrackingView,
-    OutboundTrackingStatusView
-)
-
+from .views.outbound_tracking_views import OutboundTrackingViewSet
+from .views.log import OutboundTrackingList
 
 # Router for API endpoints
 router = DefaultRouter()
 
 # Register viewsets
 router.register(r'verification', VerificationViewSet, basename='verification')
+router.register(r'outbound-tracking', OutboundTrackingViewSet, basename='outbound-tracking')
 
 # URL patterns for the app
 urlpatterns = [
@@ -103,14 +101,12 @@ urlpatterns = [
     path('trays/', TrayListCreateView.as_view(), name='tray-list-create'),
     path('trays/<int:pk>/', TrayRetrieveUpdateDestroyView.as_view(), name='tray-detail'),
     
-    # Outbound Tracking URLs
-    path('operation-sessions/<int:operation_session_id>/outbound-check/', 
-         OutboundTrackingView.as_view(), 
-         name='outbound-tracking-check'),
-    path('operation-sessions/<int:operation_session_id>/outbound-status/', 
-         OutboundTrackingStatusView.as_view(), 
-         name='outbound-tracking-status'),
+    # Note: Outbound Tracking URLs are now handled by the OutboundTrackingViewSet
+    # Access via /outbound-tracking/{operation_session_id}/status/
 
+    # Outbound Tracking URLs
+    path('outbound-tracking/', OutboundTrackingList.as_view(), name='outbound-tracking- list'),
+    
     # Include router URLs for viewsets
     path('', include(router.urls)),
 ]
