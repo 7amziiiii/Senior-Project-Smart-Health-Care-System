@@ -5,6 +5,7 @@ class LargeEquipment(models.Model):
     equipment_id = models.CharField(max_length=50, unique=True)
     rfid_tag = models.OneToOneField('RFIDTag', on_delete=models.SET_NULL, null=True)
     equipment_type = models.CharField(max_length=100)  # e.g., "C-Arm", "Microscope"
+    
     status = models.CharField(max_length=50, choices=[
         ('available', 'Available'),
         ('in_use', 'In Use'), 
@@ -12,6 +13,10 @@ class LargeEquipment(models.Model):
         ('scheduled_maintenance', 'Scheduled Maintenance')
     ], default='available')
     notes = models.TextField(blank=True)
+    
+    # Maintenance tracking fields
+    last_maintenance_date = models.DateTimeField(null=True, blank=True)
+    next_maintenance_date = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.name} ({self.equipment_id}) - {self.get_status_display()}"

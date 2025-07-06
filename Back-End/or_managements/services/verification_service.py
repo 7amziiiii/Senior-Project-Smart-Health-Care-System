@@ -48,22 +48,12 @@ class VerificationService:
             defaults={
                 'state': 'incomplete',
                 'open_until': self.operation_session.scheduled_time,
-                'used_items': {},
-                'missing_items': {},
-                'available_items': {},
-                'available_matches': {}
+                'used_items_dict': {},
+                'missing_items_dict': {},
+                'extra_items_dict': {},
+                'available_items_dict': {}
             }
         )
-        
-        # Track items
-        self.used_instruments = []
-        self.used_trays = []
-        self.missing_instruments = []
-        self.missing_trays = []
-        self.available_instruments = []
-        self.available_trays = []
-        self.extra_instruments = []
-        self.extra_trays = []
         
         # Track items by category with name-based dictionaries
         self.used_items_dict = {"instruments": {}, "trays": {}}
@@ -81,17 +71,7 @@ class VerificationService:
         Returns:
             Dict containing verification results
         """
-        # Reset tracking lists
-        self.used_instruments = []
-        self.used_trays = []
-        self.missing_instruments = []
-        self.missing_trays = []
-        self.available_instruments = []
-        self.available_trays = []
-        self.extra_instruments = []
-        self.extra_trays = []
-        
-        # Track items by category with name-based dictionaries
+        # Reset dictionaries for a fresh verification cycle
         self.used_items_dict = {"instruments": {}, "trays": {}}
         self.missing_items_dict = {"instruments": {}, "trays": {}}
         self.extra_items_dict = {"instruments": {}, "trays": {}}
@@ -345,7 +325,6 @@ class VerificationService:
             if used_qty > 0:
                 # Take the first 'used_qty' instruments as used
                 used_instruments = found_with_name[:used_qty]
-                self.used_instruments.extend(used_instruments)
                 
                 # Add to used_items_dict with IDs for tracking
                 self.used_items_dict["instruments"][name] = {
@@ -373,13 +352,17 @@ class VerificationService:
                         "quantity": min(missing_qty, len(available_instruments)),
                         "ids": [i.id for i in available_instruments[:missing_qty]]
                     }
-                    # Add these to the available_instruments list for object tracking
-                    self.available_instruments.extend(list(available_instruments[:missing_qty]))
+                
+                # Add available instruments (not in room but could be used) to available_items_dict
+                if available_instruments:
+                    self.available_items_dict["instruments"][name] = {
+                        "quantity": min(missing_qty, len(available_instruments)),
+                        "ids": [i.id for i in available_instruments[:missing_qty]]
+                    }
             
             # Handle extra instruments with this name (beyond required quantity)
             if found_qty > required_qty:
                 extra_instruments = found_with_name[required_qty:]
-                self.extra_instruments.extend(extra_instruments)
                 
                 # Add to extra_items_dict
                 self.extra_items_dict["instruments"][name] = {
@@ -390,7 +373,6 @@ class VerificationService:
         # Process any found instruments that aren't in the required list at all
         for name, instruments in found_instruments_by_name.items():
             if name not in required_instrument_names:
-                self.extra_instruments.extend(instruments)
                 self.extra_items_dict["instruments"][name] = {
                     "quantity": len(instruments),
                     "ids": [i.id for i in instruments]
@@ -410,7 +392,6 @@ class VerificationService:
             if used_qty > 0:
                 # Take the first 'used_qty' trays as used
                 used_trays = found_with_name[:used_qty]
-                self.used_trays.extend(used_trays)
                 
                 # Add to used_items_dict with IDs for tracking
                 self.used_items_dict["trays"][name] = {
@@ -438,13 +419,11 @@ class VerificationService:
                         "quantity": min(missing_qty, len(available_trays)),
                         "ids": [t.id for t in available_trays[:missing_qty]]
                     }
-                    # Add these to the available_trays list for object tracking
-                    self.available_trays.extend(list(available_trays[:missing_qty]))
+                    # Track available trays using only dictionaries (no list tracking)
             
             # Handle extra trays with this name (beyond required quantity)
             if found_qty > required_qty:
                 extra_trays = found_with_name[required_qty:]
-                self.extra_trays.extend(extra_trays)
                 
                 # Add to extra_items_dict
                 self.extra_items_dict["trays"][name] = {
@@ -455,7 +434,6 @@ class VerificationService:
         # Process any found trays that aren't in the required list at all
         for name, trays in found_trays_by_name.items():
             if name not in required_tray_names:
-                self.extra_trays.extend(trays)
                 self.extra_items_dict["trays"][name] = {
                     "quantity": len(trays),
                     "ids": [t.id for t in trays]
@@ -494,10 +472,13 @@ class VerificationService:
     
     def _update_item_states(self):
         """Set matched instruments to 'in_use' state."""
-        # Update instruments
-        for instrument in self.used_instruments:
-            instrument.status = 'in_use'
-            instrument.save(update_fields=['status'])
+        # Update instruments based on used_items_dict
+        for name, data in self.used_items_dict.get('instruments', {}).items():
+            # Get the IDs of used instruments
+            instrument_ids = data.get('ids', [])
+            
+            # Update status for each instrument
+            Instrument.objects.filter(id__in=instrument_ids).update(status='in_use')
     
     def _determine_verification_state(self):
         """
@@ -520,10 +501,10 @@ class VerificationService:
         self.verification_session.state = self._determine_verification_state()
         
         # Update JSON fields with our name-quantity based dictionaries
-        self.verification_session.used_items = self.used_items_dict
-        self.verification_session.missing_items = self.missing_items_dict
-        self.verification_session.available_items = self.available_items_dict
-        self.verification_session.available_matches = self._find_potential_replacements()
+        self.verification_session.used_items_dict = self.used_items_dict
+        self.verification_session.missing_items_dict = self.missing_items_dict
+        self.verification_session.extra_items_dict = self.extra_items_dict
+        self.verification_session.available_items_dict = self.available_items_dict
         
         # Save changes to database
         self.verification_session.save()

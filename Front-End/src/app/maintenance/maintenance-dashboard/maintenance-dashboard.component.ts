@@ -18,6 +18,13 @@ export class MaintenanceDashboardComponent implements OnInit {
   // Features available in the maintenance dashboard
   features = [
     {
+      id: 'equipment-requests',
+      title: 'Equipment Requests',
+      description: 'View and manage equipment requests from medical staff',
+      icon: 'fa-clipboard-list',
+      route: '/equipment-requests'
+    },
+    {
       id: 'equipment-overview',
       title: 'Equipment Overview',
       description: 'Monitor all hospital equipment status, location, and maintenance needs',

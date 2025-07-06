@@ -21,9 +21,8 @@ class OperationSessionListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'operation_type', 'operation_room', 
             'scheduled_time', 'state', 'state_display',
-             'users', 'created_at', 'updated_at'
+            'users'
         ]
-        read_only_fields = ['created_at', 'updated_at']
     
 
 
@@ -41,6 +40,5 @@ class OperationSessionDetailSerializer(serializers.ModelSerializer):
             'id', 'operation_type', 'operation_type_id',
             'operation_room', 'operation_room_id',
             'scheduled_time', 'users',
-            'state', 'state_display', 'created_at', 'updated_at', 'end_time'
+            'state', 'state_display', 'end_time'
         ]
-        read_only_fields = ['created_at', 'updated_at']
