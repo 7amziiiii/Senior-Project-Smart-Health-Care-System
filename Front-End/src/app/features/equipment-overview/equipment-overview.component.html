@@ -1,0 +1,167 @@
+<div class="equipment-overview-container">
+  <!-- Header with navigation -->
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <button class="back-button" (click)="navigateToMaintenanceDashboard()">
+          <i class="fas fa-arrow-left"></i>
+          Back to Dashboard
+        </button>
+        <h1>Equipment Overview</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content area -->
+  <div class="main-content">
+    <!-- Equipment list view (shown when no equipment is selected) -->
+    <div class="equipment-list-view" *ngIf="!selectedEquipment">
+      <!-- Filters and search -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input 
+            type="text" 
+            placeholder="Search equipment..." 
+            [(ngModel)]="searchTerm"
+            (input)="applyFilters()"
+          >
+        </div>
+        <div class="status-filter">
+          <label for="status-select">Status:</label>
+          <select 
+            id="status-select" 
+            [(ngModel)]="filterStatus"
+            (change)="applyFilters()"
+          >
+            <option value="all">All Statuses</option>
+            <option value="in_maintenance">In Maintenance</option>
+            <option value="in_or">In OR Room</option>
+            <option value="not_found">Not Found</option>
+            <option value="available">Available</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Equipment count summary -->
+      <div class="equipment-summary">
+        <p><strong>{{ filteredEquipment.length }}</strong> equipment items found</p>
+      </div>
+
+      <!-- Equipment table -->
+      <div class="equipment-table-wrapper">
+        <table class="equipment-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Location</th>
+              <th>Last Maintenance</th>
+              <th>Next Maintenance</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let equipment of filteredEquipment">
+              <td>{{ equipment.name }}</td>
+              <td>{{ equipment.type }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(equipment.status)">
+                  {{ getStatusLabel(equipment.status) }}
+                </span>
+              </td>
+              <td>
+                <ng-container *ngIf="equipment.roomNumber">{{ equipment.roomNumber }}</ng-container>
+                <ng-container *ngIf="equipment.lastSeen && !equipment.roomNumber">
+                  Last seen: {{ equipment.lastSeen }}
+                </ng-container>
+                <ng-container *ngIf="!equipment.roomNumber && !equipment.lastSeen">-</ng-container>
+              </td>
+              <td>{{ equipment.lastMaintenance }}</td>
+              <td>{{ equipment.nextMaintenance }}</td>
+              <td>
+                <button class="view-details-btn" (click)="selectEquipment(equipment)">
+                  <i class="fas fa-info-circle"></i>
+                  Details
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Equipment detail view (shown when equipment is selected) -->
+    <div class="equipment-detail-view" *ngIf="selectedEquipment">
+      <div class="detail-header">
+        <button class="back-button" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i>
+          Back to List
+        </button>
+        <h2>{{ selectedEquipment.name }}</h2>
+        <span class="status-badge" [ngClass]="getStatusClass(selectedEquipment.status)">
+          {{ getStatusLabel(selectedEquipment.status) }}
+        </span>
+      </div>
+
+      <div class="equipment-details">
+        <div class="detail-section">
+          <h3>Equipment Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Type:</span>
+              <span class="value">{{ selectedEquipment.type }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Status:</span>
+              <span class="value">{{ getStatusLabel(selectedEquipment.status) }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedEquipment.roomNumber">
+              <span class="label">Room:</span>
+              <span class="value">{{ selectedEquipment.roomNumber }}</span>
+            </div>
+            <div class="detail-item" *ngIf="selectedEquipment.lastSeen && !selectedEquipment.roomNumber">
+              <span class="label">Last Seen:</span>
+              <span class="value">{{ selectedEquipment.lastSeen }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Maintenance Schedule</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Last Maintenance:</span>
+              <span class="value">{{ selectedEquipment.lastMaintenance }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Next Maintenance:</span>
+              <span class="value">{{ selectedEquipment.nextMaintenance }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Notes & History</h3>
+          <div class="notes-area">
+            <pre>{{ selectedEquipment.notes }}</pre>
+          </div>
+
+          <div class="add-note-section">
+            <h4>Add New Note</h4>
+            <textarea 
+              [(ngModel)]="newNote" 
+              placeholder="Enter maintenance notes here..."
+              rows="3"
+            ></textarea>
+            <button class="add-note-btn" (click)="addNote()" [disabled]="!newNote.trim()">
+              <i class="fas fa-plus"></i>
+              Add Note
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

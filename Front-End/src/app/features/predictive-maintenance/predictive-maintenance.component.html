@@ -1,0 +1,210 @@
+<div class="maintenance-dashboard">
+  <!-- Top navigation bar -->
+  <nav class="top-nav">
+    <div class="container">
+      <div class="nav-left">
+        <button class="btn-back" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <h1>Predictive Maintenance</h1>
+      </div>
+      <div class="nav-right">
+        <span class="date-display">{{ today | date:'MMM d, y' }}</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page content -->
+  <div class="content-container">
+    <div class="dashboard-summary">
+      <div class="summary-card maintenance-required">
+        <div class="card-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="card-content">
+          <h3>Need Maintenance</h3>
+          <div class="card-value">2</div>
+        </div>
+      </div>
+
+      <div class="summary-card maintenance-ok">
+        <div class="card-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="card-content">
+          <h3>Good Condition</h3>
+          <div class="card-value">4</div>
+        </div>
+      </div>
+
+      <div class="summary-card total-equipment">
+        <div class="card-icon">
+          <i class="fas fa-stethoscope"></i>
+        </div>
+        <div class="card-content">
+          <h3>Total Equipment</h3>
+          <div class="card-value">6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipment Sections -->
+    <div class="dashboard-section">
+      <div class="section-header maintenance-needed">
+        <i class="fas fa-tools"></i>
+        <h2>Equipment Needing Maintenance</h2>
+      </div>
+      <div class="equipment-list">
+        <!-- Equipment Item 1 -->
+        <div class="equipment-item needs-maintenance">
+          <div class="item-header">
+            <h3>Ventilator #A2234</h3>
+            <div class="maintenance-badge">Maintenance Required</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Respiratory</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">OR Room 3</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">Jan 15, 2025</span>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-primary">
+                <i class="fas fa-calendar-check"></i> Schedule Service
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Item 2 -->
+        <div class="equipment-item needs-maintenance">
+          <div class="item-header">
+            <h3>X-Ray Machine</h3>
+            <div class="maintenance-badge">Maintenance Required</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Imaging</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">Radiology Department</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">Dec 10, 2024</span>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-primary">
+                <i class="fas fa-calendar-check"></i> Schedule Service
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <div class="section-header maintenance-ok">
+        <i class="fas fa-check-circle"></i>
+        <h2>Equipment in Good Condition</h2>
+      </div>
+      <div class="equipment-list">
+        <!-- Equipment Item 3 -->
+        <div class="equipment-item">
+          <div class="item-header">
+            <h3>ECG Monitor</h3>
+            <div class="maintenance-badge good">No Maintenance Needed</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Cardiac</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">ICU</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">May 8, 2025</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Item 4 -->
+        <div class="equipment-item">
+          <div class="item-header">
+            <h3>Anesthesia Machine</h3>
+            <div class="maintenance-badge good">No Maintenance Needed</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Anesthesiology</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">OR Room 2</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">Apr 20, 2025</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Item 5 -->
+        <div class="equipment-item">
+          <div class="item-header">
+            <h3>MRI Scanner</h3>
+            <div class="maintenance-badge good">No Maintenance Needed</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Imaging</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">Radiology Department</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">May 15, 2025</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment Item 6 -->
+        <div class="equipment-item">
+          <div class="item-header">
+            <h3>Surgical Robot</h3>
+            <div class="maintenance-badge good">No Maintenance Needed</div>
+          </div>
+          <div class="item-details">
+            <div class="detail-group">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">Robotics</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">OR Room 1</span>
+            </div>
+            <div class="detail-group">
+              <span class="detail-label">Last Service:</span>
+              <span class="detail-value">Mar 28, 2025</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+<div class="maintenance-dashboard-container">
+  <header>
+    <div class="header-content">
+      <h1>Maintenance Dashboard</h1>
+      <div class="user-info">
+        <span class="user-name">{{ username }}</span>
+        <button class="logout-button" (click)="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="dashboard-content">
+    <div class="welcome-section">
+      <h2>Welcome to the Maintenance Dashboard</h2>
+      <p class="welcome-text">
+        Select a feature below to monitor equipment status, schedule maintenance, 
+        or view predictive maintenance data.
+      </p>
+    </div>
+    
+    <div class="features-section">
+      <div class="feature-card" *ngFor="let feature of features" (click)="navigateToFeature(feature.id)">
+        <div class="feature-icon">
+          <i class="fas {{ feature.icon }}"></i>
+        </div>
+        <div class="feature-info">
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
