@@ -1,8 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
+from ...permissions.role_permissions import IsAdmin
 
 
 class PendingUsersListView(generics.ListAPIView):
@@ -10,7 +10,7 @@ class PendingUsersListView(generics.ListAPIView):
     View to list all users pending approval.
     Only accessible by admin users.
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     
     def get_queryset(self):
         return User.objects.filter(is_active=False)
@@ -44,14 +44,14 @@ class UserApprovalView(APIView):
     View to approve or reject user registrations.
     Only accessible by admin users.
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     
-    def post(self, request, user_id):
+    def post(self, request, pk):
         try:
             # Log the received parameters to help debug
-            logger.error(f"UserApprovalView received: user_id={user_id}, request.data={request.data}")
+            logger.error(f"UserApprovalView received: user_id={pk}, request.data={request.data}")
             
-            user = User.objects.get(id=user_id, is_active=False)
+            user = User.objects.get(id=pk, is_active=False)
             action = request.data.get('action', '').lower()
             
             if action == 'approve':

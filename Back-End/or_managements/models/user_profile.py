@@ -11,11 +11,13 @@ class UserProfile(models.Model):
     NURSE = 'nurse'
     DOCTOR = 'doctor'
     MAINTENANCE = 'maintenance'
+    ADMIN = 'admin'
     
     ROLE_CHOICES = [
         (NURSE, 'Nurse'),
         (DOCTOR, 'Doctor'),
         (MAINTENANCE, 'Maintenance'),
+        (ADMIN, 'Admin'),
     ]
     
     # Define approval status choices
@@ -68,6 +70,14 @@ class UserProfile(models.Model):
     def is_approved(self):
         """Convenience method to check if user is approved"""
         return self.approval_status == self.APPROVED
+        
+    def save(self, *args, **kwargs):
+        # Set is_staff=True for admin users
+        if self.role == self.ADMIN and hasattr(self, 'user') and not self.user.is_staff:
+            self.user.is_staff = True
+            self.user.save(update_fields=['is_staff'])
+            
+        super().save(*args, **kwargs)
 
 
 # Signals to automatically create/update user profile when User is saved

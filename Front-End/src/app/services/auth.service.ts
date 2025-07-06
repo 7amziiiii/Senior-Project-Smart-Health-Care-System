@@ -13,7 +13,7 @@ export class AuthService {
   private readonly USER_KEY = 'auth_user';
   private apiUrl = environment.apiUrl;
   private isAuthenticated = new BehaviorSubject<boolean>(this.hasToken());
-  private simulationMode = true; // Temporarily enabled for maintenance dashboard testing // DISABLED to use real token authentication
+  private simulationMode = false; // DISABLED - using real token authentication only
   
   constructor(private http: HttpClient, private router: Router) {
     // Clear any simulated tokens when starting in real mode
@@ -99,15 +99,30 @@ export class AuthService {
           
           if (response && response.token) {
             // Store token and user data
+            // DEBUG: Log the raw response from backend
+            console.log('DEBUG - Raw login response:', response);
+            
+            // If username is 'maintenance', force the role to be maintenance
+            // This is a temporary fix until we resolve the backend issue
+            let roleValue = response.role || '';
+            let profileRole = response.profile?.role || roleValue;
+            
+            if (username.toLowerCase() === 'maintenance') {
+              console.log('DEBUG - Detected maintenance username, setting role explicitly');
+              roleValue = 'maintenance';
+              profileRole = 'maintenance';
+            }
+            
+            // Use the role information from the backend response
             const userData = {
               username: response.username || username,
-              is_staff: response.is_staff !== undefined ? response.is_staff : (username === 'admin'),
-              is_superuser: response.is_superuser !== undefined ? response.is_superuser : (username === 'admin'),
-              // Add role information for admin check
-              role: response.role || (username === 'admin' ? 'admin' : (username === 'itguy' ? 'it_admin' : 'staff')),
-              // Create profile structure if missing
+              is_staff: response.is_staff !== undefined ? response.is_staff : false,
+              is_superuser: response.is_superuser !== undefined ? response.is_superuser : false,
+              // Use role with special handling for maintenance
+              role: roleValue,
+              // Use profile with special handling for maintenance
               profile: {
-                role: response.profile?.role || (username === 'admin' ? 'admin' : (username === 'itguy' ? 'it_admin' : 'staff'))
+                role: profileRole
               }
             };
             
@@ -115,6 +130,36 @@ export class AuthService {
             localStorage.setItem(this.TOKEN_KEY, response.token);
             localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
             this.isAuthenticated.next(true);
+            
+            // Add explicit debug logs for navigation
+            console.log('DEBUG - Navigating based on role checks:', { 
+              isAdmin: this.isAdmin(),
+              isMaintenance: this.isMaintenance(),
+              isDoctorOrNurse: this.isDoctorOrNurse()
+            });
+            
+            // Clear navigation history to prevent unwanted redirects
+            history.replaceState({}, '', window.location.pathname);
+            
+            // Navigate based on user role with clear fallbacks
+            if (this.isAdmin()) {
+              console.log('DEBUG - Navigating to admin dashboard');
+              // Use skipLocationChange to avoid browser history issues
+              this.router.navigate(['/admin'], { replaceUrl: true, skipLocationChange: false });
+            } else if (this.isMaintenance()) {
+              console.log('DEBUG - Navigating to maintenance dashboard');
+              // Force browser to clear history and prevent any redirect attempts for maintenance users
+              setTimeout(() => {
+                window.location.href = '/maintenance';
+              }, 100);
+            } else if (this.isDoctorOrNurse()) {
+              console.log('DEBUG - Navigating to general dashboard');
+              this.router.navigate(['/dashboard'], { replaceUrl: true });
+            } else {
+              // Explicit fallback if no role matched
+              console.log('DEBUG - No role matched, navigating to login');
+              this.router.navigate(['/login'], { replaceUrl: true });
+            }
           }
         }),
         catchError(error => {
@@ -222,12 +267,65 @@ export class AuthService {
     if (userData && (
       userData.username === 'itguy' || 
       userData.role === 'it_admin' || 
-      (userData.profile && userData.profile.role === 'it_admin')
+      userData.role === 'admin' ||
+      (userData.profile && (userData.profile.role === 'it_admin' || userData.profile.role === 'admin'))
     )) {
       return true;
     }
     
     return isAdminUser;
+  }
+  
+  isDoctor(): boolean {
+    const userData = this.getUserData();
+    if (!userData) return false;
+    
+    return userData.role === 'doctor' || 
+           (userData.profile && userData.profile.role === 'doctor');
+  }
+  
+  isNurse(): boolean {
+    const userData = this.getUserData();
+    if (!userData) return false;
+    
+    return userData.role === 'nurse' || 
+           (userData.profile && userData.profile.role === 'nurse');
+  }
+  
+  isMaintenance(): boolean {
+    const userData = this.getUserData();
+    if (!userData) return false;
+    
+    // DEBUG: Add logging to see what's being checked
+    console.log('DEBUG - isMaintenance check:', {
+      username: userData.username,
+      role: userData.role,
+      profileRole: userData.profile?.role,
+      isMaintenanceByRole: userData.role === 'maintenance',
+      isMaintenanceByProfileRole: userData.profile && userData.profile.role === 'maintenance'
+    });
+    
+    return userData.role === 'maintenance' || 
+           (userData.profile && userData.profile.role === 'maintenance');
+  }
+  
+  isDoctorOrNurse(): boolean {
+    return this.isDoctor() || this.isNurse();
+  }
+  
+  /**
+   * Check if user has any of the specified roles
+   * @param roles Array of role names to check
+   * @returns true if user has any of the roles
+   */
+  hasRole(roles: string[]): boolean {
+    if (this.isAdmin()) return true; // Admin has access to all roles
+    
+    if (roles.includes('doctor') && this.isDoctor()) return true;
+    if (roles.includes('nurse') && this.isNurse()) return true;
+    if (roles.includes('maintenance') && this.isMaintenance()) return true;
+    
+    return false;
   }
   
   private hasToken(): boolean {

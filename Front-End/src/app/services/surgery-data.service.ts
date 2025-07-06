@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, delay, tap } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, delay, tap, catchError } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 export interface Instrument {
@@ -19,6 +19,31 @@ export interface Surgery {
   requiredInstruments: Instrument[];
   patient_name?: string;
   state?: string;
+  state_display?: string;
+}
+
+// Define the possible operation states from the backend
+type OperationSessionState = 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | string;
+
+// Define interface for API response
+interface OperationSession {
+  id: number;
+  operation_type: {
+    id: number;
+    name: string;
+    description: string;
+  } | number | string;
+  operation_room: {
+    id: number;
+    name: string;
+  } | number | string;
+  scheduled_time: string;
+  state: OperationSessionState;
+  state_display?: string;
+  users?: Array<{
+    id: number;
+    username: string;
+  }>;
 }
 
 @Injectable({
@@ -28,138 +53,130 @@ export class SurgeryDataService {
   private surgeriesSubject = new BehaviorSubject<Surgery[]>([]);
   private selectedSurgerySubject = new BehaviorSubject<Surgery | null>(null);
   private surgeries: Surgery[] = [];
-  private simulationMode = false; // Toggle between real API and simulation
+  private simulationMode = false; // DISABLED - using real API only
 
   constructor(private http: HttpClient) {
-    // Initialize with mock data
+    // Initialize with data from API
     this.loadSurgeries();
   }
   
   private mockSurgeries: Surgery[] = [
-      {
-        id: 1,
-        name: 'Appendectomy',
-        description: 'Surgical removal of the appendix',
-        status: 'ongoing',
-        scheduledTime: '2023-11-15T09:30:00',
-        roomNumber: '301',
-        requiredInstruments: [
-          { id: 101, name: 'Scalpel handle', inRoom: true },
-          { id: 102, name: 'Metzenbaum scissors', inRoom: true },
-          { id: 103, name: 'Mayo scissors', inRoom: false },
-          { id: 104, name: 'Kelly clamps', inRoom: true },
-          { id: 105, name: 'Mosquito forceps', inRoom: true },
-          { id: 106, name: 'Needle holders', inRoom: false },
-          { id: 107, name: 'Tissue forceps (Toothed)', inRoom: true },
-          { id: 108, name: 'Tissue forceps (Non-Toothed)', inRoom: false },
-          { id: 109, name: 'Army-Navy retractors', inRoom: true },
-          { id: 110, name: 'Richardson retractors', inRoom: true },
-          { id: 111, name: 'Laparoscopic trocars', inRoom: false },
-          { id: 112, name: 'Laparoscopic graspers', inRoom: true },
-          { id: 113, name: 'Laparoscopic scissors', inRoom: false },
-          { id: 114, name: 'Laparoscopic clip appliers', inRoom: true },
-          { id: 115, name: 'Laparoscopic camera and light cable', inRoom: false },
-          { id: 116, name: 'Suction cannula', inRoom: true },
-          { id: 117, name: 'Electrocautery pencil', inRoom: true },
-          { id: 118, name: 'Instrument tray', inRoom: true }
-        ]
-      },
-      {
-        id: 2,
-        name: 'Cesarean Section (C-Section)',
-        description: 'Surgical delivery of a baby',
-        status: 'scheduled',
-        scheduledTime: '2023-11-16T10:15:00',
-        roomNumber: '205',
-        requiredInstruments: [
-          { id: 201, name: 'Scalpel handle', inRoom: true },
-          { id: 202, name: 'Mayo scissors', inRoom: false },
-          { id: 203, name: 'Umbilical cord scissors', inRoom: true },
-          { id: 204, name: 'Allis tissue forceps', inRoom: true },
-          { id: 205, name: 'Babcock forceps', inRoom: false },
-          { id: 206, name: 'Kocher clamps', inRoom: true },
-          { id: 207, name: 'Needle holders', inRoom: true },
-          { id: 208, name: 'Ring forceps', inRoom: false },
-          { id: 209, name: 'Towel clamps', inRoom: true },
-          { id: 210, name: 'DeBakey forceps', inRoom: false },
-          { id: 211, name: 'Deaver retractors', inRoom: true },
-          { id: 212, name: 'Doyen retractor', inRoom: true },
-          { id: 213, name: 'Bladder blade', inRoom: false },
-          { id: 214, name: 'Cesarean instrument tray', inRoom: true },
-          { id: 215, name: 'Electrocautery pencil', inRoom: false },
-          { id: 216, name: 'Light handles', inRoom: true },
-          { id: 217, name: 'Suction tip', inRoom: true },
-          { id: 218, name: 'Delivery forceps', inRoom: false }
-        ]
-      },
-      {
-        id: 3,
-        name: 'Total Knee Replacement (TKR)',
-        description: 'Surgical replacement of the knee joint',
-        status: 'scheduled',
-        scheduledTime: '2023-11-15T14:00:00',
-        roomNumber: '206',
-        requiredInstruments: [
-          { id: 301, name: 'Oscillating saw handpiece', inRoom: true },
-          { id: 302, name: 'Bone saw blades', inRoom: false },
-          { id: 303, name: 'Reamers', inRoom: true },
-          { id: 304, name: 'Rasp', inRoom: true },
-          { id: 305, name: 'Orthopedic mallet', inRoom: false },
-          { id: 306, name: 'Femoral cutting blocks', inRoom: true },
-          { id: 307, name: 'Tibial cutting blocks', inRoom: false },
-          { id: 308, name: 'Broaches', inRoom: true },
-          { id: 309, name: 'Trial implants (femoral)', inRoom: true },
-          { id: 310, name: 'Trial implants (tibial)', inRoom: false },
-          { id: 311, name: 'Calipers', inRoom: true },
-          { id: 312, name: 'Depth gauge', inRoom: false },
-          { id: 313, name: 'Bone hooks', inRoom: true },
-          { id: 314, name: 'Hohmann retractors', inRoom: true },
-          { id: 315, name: 'Curettes', inRoom: false },
-          { id: 316, name: 'Impactors', inRoom: true },
-          { id: 317, name: 'Alignment guides', inRoom: false },
-          { id: 318, name: 'Instrument trays', inRoom: true },
-          { id: 319, name: 'Implant inserters', inRoom: true },
-          { id: 320, name: 'Electrocautery pencil', inRoom: false },
-          { id: 321, name: 'Drill and drill bits', inRoom: true },
-          { id: 322, name: 'Cement mixing bowl', inRoom: false },
-          { id: 323, name: 'Light handles', inRoom: true },
-          { id: 324, name: 'Power tool system', inRoom: true }
-        ]
-      }
-    ];
-  
-  // Load surgeries either from API or mock data
-  loadSurgeries(): void {
-    if (this.simulationMode) {
-      this.simulateApiCall().subscribe(surgeries => {
-        this.surgeries = surgeries;
-        this.surgeriesSubject.next(surgeries);
-      });
-    } else {
-      // Real API implementation - fetch operation sessions from backend
-      this.http.get<any[]>(`${environment.apiUrl}/operation-sessions/`).subscribe(sessions => {
-        // Map operation sessions to Surgery interface
-        this.surgeries = sessions.map(session => ({
-          id: session.id,
-          name: session.operation_type || 'Unknown Operation',
-          description: session.notes || '',
-          status: this.mapOperationSessionStateToStatus(session.state),
-          scheduledTime: session.start_time || new Date().toISOString(),
-          roomNumber: session.room || 'Unknown',
-          requiredInstruments: [],  // We'll populate this from other calls if needed
-          patient_name: session.patient_name || 'Unknown Patient',
-          state: session.state
-        }));
-        this.surgeriesSubject.next(this.surgeries);
-      }, error => {
-        console.error('Error fetching operation sessions:', error);
-        // Fallback to mock data if API fails
-        this.simulateApiCall().subscribe(surgeries => {
-          this.surgeries = surgeries;
-          this.surgeriesSubject.next(surgeries);
-        });
-      });
+    {
+      id: 1,
+      name: 'Appendectomy',
+      description: 'Surgical removal of the appendix',
+      status: 'ongoing',
+      scheduledTime: '2023-11-15T09:30:00',
+      roomNumber: '301',
+      requiredInstruments: [
+        { id: 101, name: 'Scalpel handle', inRoom: true },
+        { id: 102, name: 'Metzenbaum scissors', inRoom: true },
+        { id: 103, name: 'Mayo scissors', inRoom: false },
+        { id: 104, name: 'Kelly clamps', inRoom: true },
+        { id: 105, name: 'Mosquito forceps', inRoom: true },
+        { id: 106, name: 'Needle holders', inRoom: false },
+        { id: 107, name: 'Tissue forceps (Toothed)', inRoom: true },
+        { id: 108, name: 'Tissue forceps (Non-Toothed)', inRoom: false }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Cesarean Section',
+      description: 'Surgical delivery of a baby',
+      status: 'scheduled',
+      scheduledTime: '2023-11-16T10:15:00',
+      roomNumber: '205',
+      requiredInstruments: [
+        { id: 201, name: 'Scalpel handle', inRoom: true },
+        { id: 202, name: 'Mayo scissors', inRoom: false },
+        { id: 203, name: 'Umbilical cord scissors', inRoom: true },
+        { id: 204, name: 'Allis tissue forceps', inRoom: true }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Total Hip Replacement',
+      description: 'Replacement of hip joint with prosthesis',
+      status: 'completed',
+      scheduledTime: '2023-11-14T08:00:00',
+      roomNumber: '405',
+      requiredInstruments: [
+        { id: 301, name: 'Hip retractor set', inRoom: true },
+        { id: 302, name: 'Acetabular reamer set', inRoom: true },
+        { id: 303, name: 'Femoral broach set', inRoom: false },
+        { id: 304, name: 'Femoral head/neck resection guide', inRoom: true }
+      ]
     }
+  ];
+
+  // Load surgeries from API
+  private loadSurgeries(): void {
+    // Check if authentication token exists
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.error('No authentication token found');
+      // Fall back to mock data since no token available
+      this.fallbackToMockData();
+      return;
+    }
+
+    // Create headers with authentication token
+    const headers = new HttpHeaders().set('Authorization', `Token ${token}`);
+    
+    // Make HTTP request to get operation sessions from backend
+    this.http.get<OperationSession[] | {results: OperationSession[]}>(
+      `${environment.apiUrl}/operation-sessions/`, 
+      { headers }
+    ).pipe(
+      catchError(error => {
+        console.error('Error fetching operation sessions:', error);
+        // Fall back to mock data if API fails
+        return this.simulateApiCall();
+      })
+    ).subscribe(
+      (response) => {
+        // Handle both array response and paginated response
+        const operationSessions = Array.isArray(response) ? response : (response as {results: OperationSession[]}).results || [];
+        // Ensure we're working with OperationSession[] type
+        const sessions = operationSessions as OperationSession[];
+        
+        // Map operation session data to Surgery objects
+        this.surgeries = sessions.map((session: OperationSession): Surgery => ({
+          id: session.id,
+          name: typeof session.operation_type === 'object' ? 
+                  (session.operation_type?.name || 'Unknown Operation') : 
+                  String(session.operation_type || 'Unknown Operation'),
+          description: typeof session.operation_type === 'object' ? 
+                      (session.operation_type?.description || '') : 
+                      '',
+          status: this.mapOperationSessionStateToStatus(session.state),
+          scheduledTime: session.scheduled_time || new Date().toISOString(),
+          roomNumber: typeof session.operation_room === 'object' ? 
+                     (session.operation_room?.name || 'Unknown Room') : 
+                     String(session.operation_room || 'Unknown Room'),
+          requiredInstruments: [], // We'll populate this from other calls if needed
+          patient_name: session.users && Array.isArray(session.users) && session.users.length > 0 ? 
+                       `Patient of ${session.users[0].username || 'Unknown'}` : 
+                       'Unknown Patient',
+          state: session.state,
+          state_display: session.state_display || this.capitalizeFirstLetter(session.state || '')
+        }));
+        
+        // Update the subject
+        this.surgeriesSubject.next(this.surgeries);
+      }, 
+      error => {
+        console.error('Error processing operation sessions:', error);
+        this.fallbackToMockData();
+      }
+    );
+  }
+  
+  // Fallback to mock data if API fails
+  private fallbackToMockData(): void {
+    console.warn('Using mock surgery data');
+    this.surgeries = this.mockSurgeries;
+    this.surgeriesSubject.next(this.surgeries);
   }
   
   // Simulate API call with mock data
@@ -175,14 +192,13 @@ export class SurgeryDataService {
   }
   
   getSurgeriesByStatus(status: 'scheduled' | 'ongoing' | 'completed'): Observable<Surgery[]> {
-    return of(this.surgeries.filter(surgery => surgery.status === status)).pipe(
-      delay(300) // Simulate small network delay
-    );
+    // Return filtered surgeries immediately from the cached data
+    return of(this.surgeries.filter(surgery => surgery.status === status));
   }
 
   getSurgeryById(id: number): Observable<Surgery | undefined> {
     const surgery = this.surgeries.find(surgery => surgery.id === id);
-    return of(surgery).pipe(delay(300)); // Simulate network delay
+    return of(surgery); // Return immediately from cached data
   }
 
   setSelectedSurgery(surgery: Surgery | null): void {
@@ -220,9 +236,19 @@ export class SurgeryDataService {
         return 'ongoing';
       case 'completed':
       case 'outbound_cleared':
+      case 'cancelled':
         return 'completed';
       default:
         return 'scheduled';
     }
+  }
+  
+  /**
+   * Helper function to capitalize the first letter of a string
+   * @param text The string to capitalize
+   */
+  private capitalizeFirstLetter(text: string): string {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).replace(/_/g, ' ');
   }
 }

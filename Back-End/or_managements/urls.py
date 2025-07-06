@@ -48,8 +48,8 @@ from .views.trays.tray_views import (
     TrayListCreateView, 
     TrayRetrieveUpdateDestroyView
 )
-from .views.verification_views import VerificationViewSet
-from .views.outbound_tracking_views import OutboundTrackingViewSet
+from .views.verification.verification_views import VerificationViewSet
+from .views.verification.outbound_tracking_views import OutboundTrackingViewSet
 from .views.log import OutboundTrackingList
 
 # Router for API endpoints
