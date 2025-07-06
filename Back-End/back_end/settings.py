@@ -149,3 +149,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ]
 }
+
+# Add custom authentication backend for admin users
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # default
+    'or_managements.permissions.admin_permissions.AdminPermissionBackend',
+]

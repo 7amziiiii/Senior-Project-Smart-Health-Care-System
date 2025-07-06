@@ -10,12 +10,13 @@ from rest_framework.permissions import AllowAny
 
 from or_managements.models import OperationSession, VerificationSession
 from or_managements.services.verification_service import VerificationService
+from or_managements.permissions.role_permissions import IsDoctorOrNurse, IsAdmin
 
 logger = logging.getLogger(__name__)
 
 class VerificationViewSet(viewsets.ViewSet):
-    # Using default authentication classes and permission classes
-    # This will use the project's default settings (TokenAuthentication, SessionAuthentication, IsAuthenticated)
+    # Apply specific permission classes for doctor/nurse roles and admin
+    permission_classes = [IsAdmin, IsDoctorOrNurse]
     """
     API endpoints for verification operations.
     """

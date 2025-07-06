@@ -16,9 +16,8 @@ class VerificationSession(models.Model):
     used_items: {
         "instruments": {
             "ItemName": {
-                "required": <int>,     # Required quantity
-                "used": <int>,         # Actually used quantity
-                "ids": [<id>, ...]     # IDs of specific instruments used
+                "quantity": <int>,    # Quantity found/used
+                "ids": [<id>, ...]    # IDs of specific instruments used
             }
         },
         "trays": { similar structure }
@@ -27,8 +26,8 @@ class VerificationSession(models.Model):
     missing_items: {
         "instruments": {
             "ItemName": {
-                "required": <int>,     # Required quantity
-                "missing": <int>       # Number still missing
+                "quantity": <int>,    # Quantity still missing
+                "required": <int>     # Total quantity required
             }
         },
         "trays": { similar structure }
@@ -36,22 +35,37 @@ class VerificationSession(models.Model):
     
     extra_items: {
         "instruments": {
-            "ItemName": [<id>, ...],   # IDs of extra items in room (beyond required or not required)
+            "ItemName": {
+                "quantity": <int>,    # Quantity of extra items
+                "ids": [<id>, ...]    # IDs of extra items 
+            }
         },
         "trays": { similar structure }
     }
     
     available_items: {
         "instruments": {
-            "ItemName": [<id>, ...],   # IDs of items outside room with same name as missing items
+            "ItemName": {
+                "quantity": <int>,    # Quantity available
+                "ids": [<id>, ...]    # IDs of available items
+            }
         },
         "trays": { similar structure }
+    }
+    
+    The service also formats data for frontend tabs:
+    "tabs": {
+        "present": { "count": <int>, "items": [{"name": <str>, "type": <str>, "quantity": <int>}, ...] },
+        "missing": { "count": <int>, "items": [{"name": <str>, "type": <str>, "quantity": <int>}, ...] },
+        "extra": { "count": <int>, "items": [{"name": <str>, "type": <str>, "quantity": <int>}, ...] },
+        "required": { "count": <int>, "items": [{"name": <str>, "type": <str>, "quantity": <int>}, ...] }
     }
     """
     STATE_CHOICES = [
         ("valid", "valid"),
         ("incomplete", "incomplete"),
-        ("invalid", "invalid")
+        ("invalid", "invalid"),
+        ("failed", "failed")
     ]
     
     operation_session = models.OneToOneField('OperationSession', on_delete=models.CASCADE)
@@ -61,16 +75,19 @@ class VerificationSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     # Track instruments and trays that were found and used in the operation
-    used_items = JSONField(default=dict, blank=True, help_text="Instruments and trays used in the operation")
+    used_items_dict = JSONField(default=dict, blank=True, help_text="Instruments and trays used in the operation")
     
     # Track instruments and trays that were required but not found
-    missing_items = JSONField(default=dict, blank=True, help_text="Required instruments and trays that were not found")
+    missing_items_dict = JSONField(default=dict, blank=True, help_text="Required instruments and trays that were not found")
+    
+    # Track instruments and trays that were found but not part of the requirement (extras)
+    extra_items_dict = JSONField(default=dict, blank=True, help_text="Extra instruments and trays found in the room")
     
     # Track instruments and trays that were found but not used in the operation
-    available_items = JSONField(default=dict, blank=True, help_text="Instruments and trays that were found but not used")
+    available_items_dict = JSONField(default=dict, blank=True, help_text="Instruments and trays that were found but not used")
     
-    # Track available instruments/trays with same names as missing ones (potential replacements)
-    available_matches = JSONField(default=dict, blank=True, help_text="Available instruments/trays with same names as missing ones")
+    # Last updated timestamp for real-time tracking
+    last_updated = models.DateTimeField(auto_now=True)
    
     def __str__(self):
         return f"Verification for Session {self.operation_session.id} - {self.state}"

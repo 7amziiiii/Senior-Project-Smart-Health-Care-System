@@ -191,12 +191,13 @@ export class AdminDashboardComponent implements OnInit {
 
   // Navigation methods
   navigateToPanel(panel: string): void {
-    // Reset all panels first
+    console.log(`Navigating to panel: ${panel}`);
+    
+    // Reset all panel states
     this.showApprovalPanel = false;
     this.showDashboard = false;
     this.showInstruments = false;
     
-    // Show selected panel
     switch(panel) {
       case 'approval':
         this.showApprovalPanel = true;
@@ -204,10 +205,14 @@ export class AdminDashboardComponent implements OnInit {
         break;
       case 'dashboard':
         this.showDashboard = true;
-        // Redirect to the OR dashboard
+        // Redirect to dashboard after a short delay
         setTimeout(() => {
           this.router.navigate(['/dashboard']);
         }, 1000);
+        break;
+      case 'maintenance':
+        // Redirect to maintenance dashboard directly
+        this.router.navigate(['/maintenance']);
         break;
       case 'instruments':
         this.showInstruments = true;

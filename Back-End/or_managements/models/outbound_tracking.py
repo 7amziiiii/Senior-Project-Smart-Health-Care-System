@@ -30,9 +30,6 @@ class OutboundTracking(models.Model):
     # User who performed the check
     checked_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     
-    # Optional notes about the check
-    notes = models.TextField(blank=True, help_text="Optional notes about the outbound check")
-    
     class Meta:
         ordering = ['-check_time']
     

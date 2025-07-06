@@ -76,6 +76,7 @@
       <div *ngIf="scanning" class="scanning-status">
         <div class="spinner"></div>
         <p>Scanning room for remaining instruments...</p>
+        <p class="scan-info">Scan duration: 3 seconds</p>
       </div>
 
       <!-- Scan complete - Room cleared -->
@@ -85,6 +86,31 @@
         </div>
         <h3>Room Cleared</h3>
         <p>No instruments or equipment were found remaining in the operating room.</p>
+        <p *ngIf="lastScanTimestamp" class="scan-timestamp">Last scan: {{lastScanTimestamp | date:'medium'}}</p>
+        
+        <!-- Used items display -->
+        <div *ngIf="usedItems && usedItems.length > 0" class="used-items-section">
+          <h4>Used Items</h4>
+          <p>The following items were used during the procedure:</p>
+          <div class="used-items">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Type</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of usedItems">
+                  <td>{{item.name}}</td>
+                  <td>{{item.type | titlecase}}</td>
+                  <td>{{item.id || item.unique_id || 'N/A'}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Scan complete - Items remaining -->
@@ -95,13 +121,37 @@
         <h3>Items Remaining</h3>
         <p>The following items were detected in the operating room:</p>
         
+        <!-- Used items display -->
+        <div *ngIf="usedItems && usedItems.length > 0" class="used-items-section">
+          <h4>Used Items</h4>
+          <p>The following items were used during the procedure:</p>
+          <div class="used-items">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Type</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of usedItems">
+                  <td>{{item.name}}</td>
+                  <td>{{item.type | titlecase}}</td>
+                  <td>{{item.id || item.unique_id || 'N/A'}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
         <div class="remaining-items">
           <table>
             <thead>
               <tr>
                 <th>Item</th>
                 <th>Type</th>
-                <th>Location</th>
+                <th>ID</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -109,7 +159,7 @@
               <tr *ngFor="let item of remainingItems">
                 <td>{{item.name}}</td>
                 <td>{{item.type | titlecase}}</td>
-                <td>{{item.location}}</td>
+                <td>{{item.id || item.unique_id || 'N/A'}}</td>
                 <td>
                   <button class="small-button">Retrieved</button>
                 </td>
@@ -117,6 +167,7 @@
             </tbody>
           </table>
         </div>
+        <p *ngIf="lastScanTimestamp" class="scan-timestamp">Last scan: {{lastScanTimestamp | date:'medium'}}</p>
 
         <div class="actions">
           <button class="primary-button" (click)="markComplete()">

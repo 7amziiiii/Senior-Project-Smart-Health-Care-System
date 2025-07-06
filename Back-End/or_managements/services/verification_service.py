@@ -48,31 +48,20 @@ class VerificationService:
             defaults={
                 'state': 'incomplete',
                 'open_until': self.operation_session.scheduled_time,
-                'used_items': {},
-                'missing_items': {},
-                'available_items': {},
-                'available_matches': {}
+                'used_items_dict': {},
+                'missing_items_dict': {},
+                'extra_items_dict': {},
+                'available_items_dict': {}
             }
         )
-        
-        # Track items
-        self.used_instruments = []
-        self.used_trays = []
-        self.missing_instruments = []
-        self.missing_trays = []
-        self.available_instruments = []
-        self.available_trays = []
-        self.extra_instruments = []
-        self.extra_trays = []
         
         # Track items by category with name-based dictionaries
         self.used_items_dict = {"instruments": {}, "trays": {}}
         self.missing_items_dict = {"instruments": {}, "trays": {}}
         self.extra_items_dict = {"instruments": {}, "trays": {}}
         self.available_items_dict = {"instruments": {}, "trays": {}}
-        self.required_items_status = {"instruments": {}, "trays": {}}
     
-    def perform_verification(self, scan_duration=2):
+    def perform_verification(self, scan_duration=5):
         """
         Perform one verification cycle.
         
@@ -82,24 +71,13 @@ class VerificationService:
         Returns:
             Dict containing verification results
         """
-        # Reset tracking lists
-        self.used_instruments = []
-        self.used_trays = []
-        self.missing_instruments = []
-        self.missing_trays = []
-        self.available_instruments = []
-        self.available_trays = []
-        self.extra_instruments = []
-        self.extra_trays = []
-        
-        # Track items by category with name-based dictionaries
+        # Reset dictionaries for a fresh verification cycle
         self.used_items_dict = {"instruments": {}, "trays": {}}
         self.missing_items_dict = {"instruments": {}, "trays": {}}
         self.extra_items_dict = {"instruments": {}, "trays": {}}
         self.available_items_dict = {"instruments": {}, "trays": {}}
-        self.required_items_status = {"instruments": {}, "trays": {}}
         
-        # Get required items for this operation
+        # Get required instruments and trays by name
         required_instrument_names, required_tray_names = self._get_required_items()
         
         # Scan for tags
@@ -115,9 +93,6 @@ class VerificationService:
             required_instrument_names,
             required_tray_names
         )
-        
-        # Track all required items with their presence status
-        self._track_required_items_status(found_instruments, found_trays, required_instrument_names, required_tray_names)
         
         # Update item states
         self._update_item_states()
@@ -207,7 +182,16 @@ class VerificationService:
         trays = []
         
         # Process each scan result (EPC)
-        for result in scan_results.get("tags", []):
+        # Handle both list format and dict with 'tags' key format
+        scan_items = scan_results if isinstance(scan_results, list) else scan_results.get("tags", [])
+        logger.info(f"Processing {len(scan_items)} detected tags")
+        
+        # Direct console output for debugging
+        print(f"\n\n[DEBUG] Processing {len(scan_items)} detected tags from scanner")
+        print(f"[DEBUG] Raw scan results: {scan_results}")
+        print(f"[DEBUG] Scan items: {scan_items}")
+        
+        for result in scan_items:
             epc = result.get('epc')
             if not epc:
                 continue
@@ -217,24 +201,58 @@ class VerificationService:
                 # Use tag_id field instead of epc since that's what the RFIDTag model uses
                 tag = RFIDTag.objects.get(tag_id=epc)
                 
+                print(f"[DEBUG] Found tag {tag.tag_id} in database")
                 logger.info(f"Found tag {tag.tag_id} in database")
                 
                 # Check for related instrument (using the reverse relation)
                 try:
                     # For OneToOne field, the reverse relation is a direct attribute
-                    instrument = tag.tag
+                    print(f"[DEBUG] Checking instrument relations for tag {tag.tag_id}")
+                    # Try direct attribute access first
+                    try:
+                        instrument = tag.instrument
+                        print(f"[DEBUG] Found direct instrument relation: {instrument}")
+                    except AttributeError:
+                        instrument = None
+                        print(f"[DEBUG] No direct 'instrument' attribute on tag")
+                        
+                    # If that didn't work, try the 'tag' attribute
+                    if not instrument:
+                        try:
+                            instrument = tag.tag
+                            print(f"[DEBUG] Found instrument via 'tag' attribute: {instrument}")
+                        except AttributeError:
+                            print(f"[DEBUG] No 'tag' attribute on tag either")
+                            instrument = None
+                    
+                    # Print all tag attributes to help debug
+                    print(f"[DEBUG] Tag attributes: {dir(tag)}")
+                    
                     if instrument and instrument not in instruments:
+                        print(f"[DEBUG] Adding instrument {instrument.name} to found list")
                         logger.info(f"Found instrument {instrument.name} with tag {tag.tag_id}")
                         instruments.append(instrument)
+                    else:
+                        print(f"[DEBUG] Tag {tag.tag_id} does not have a valid instrument relation")
+                        logger.warning(f"Tag {tag.tag_id} does not have a valid instrument relation")
                 except Instrument.DoesNotExist:
                     pass
                 
                 # Check for related trays (there could be multiple with ForeignKey)
-                related_trays = Tray.objects.filter(tag=tag)
-                for tray in related_trays:
-                    if tray not in trays:
-                        logger.info(f"Found tray {tray.name} with tag {tag.tag_id}")
-                        trays.append(tray)
+                try:
+                    related_trays = Tray.objects.filter(tag=tag)
+                    logger.info(f"Found {related_trays.count()} trays for tag {tag.tag_id}")
+                    
+                    for tray in related_trays:
+                        if tray not in trays:
+                            logger.info(f"Found tray {tray.name} (ID: {tray.id}) with tag {tag.tag_id}")
+                            trays.append(tray)
+                except Exception as e:
+                    logger.error(f"Error fetching trays for tag {tag.tag_id}: {str(e)}")
+                    
+                # If no instruments or trays found with this tag, log a clear warning
+                if not getattr(tag, 'instrument', None) and not getattr(tag, 'tag', None) and not related_trays.exists():
+                    logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray in the database")
                         
                 if not hasattr(tag, 'tag') and not related_trays:
                     logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray")
@@ -307,7 +325,6 @@ class VerificationService:
             if used_qty > 0:
                 # Take the first 'used_qty' instruments as used
                 used_instruments = found_with_name[:used_qty]
-                self.used_instruments.extend(used_instruments)
                 
                 # Add to used_items_dict with IDs for tracking
                 self.used_items_dict["instruments"][name] = {
@@ -335,13 +352,17 @@ class VerificationService:
                         "quantity": min(missing_qty, len(available_instruments)),
                         "ids": [i.id for i in available_instruments[:missing_qty]]
                     }
-                    # Add these to the available_instruments list for object tracking
-                    self.available_instruments.extend(list(available_instruments[:missing_qty]))
+                
+                # Add available instruments (not in room but could be used) to available_items_dict
+                if available_instruments:
+                    self.available_items_dict["instruments"][name] = {
+                        "quantity": min(missing_qty, len(available_instruments)),
+                        "ids": [i.id for i in available_instruments[:missing_qty]]
+                    }
             
             # Handle extra instruments with this name (beyond required quantity)
             if found_qty > required_qty:
                 extra_instruments = found_with_name[required_qty:]
-                self.extra_instruments.extend(extra_instruments)
                 
                 # Add to extra_items_dict
                 self.extra_items_dict["instruments"][name] = {
@@ -352,7 +373,6 @@ class VerificationService:
         # Process any found instruments that aren't in the required list at all
         for name, instruments in found_instruments_by_name.items():
             if name not in required_instrument_names:
-                self.extra_instruments.extend(instruments)
                 self.extra_items_dict["instruments"][name] = {
                     "quantity": len(instruments),
                     "ids": [i.id for i in instruments]
@@ -372,7 +392,6 @@ class VerificationService:
             if used_qty > 0:
                 # Take the first 'used_qty' trays as used
                 used_trays = found_with_name[:used_qty]
-                self.used_trays.extend(used_trays)
                 
                 # Add to used_items_dict with IDs for tracking
                 self.used_items_dict["trays"][name] = {
@@ -400,13 +419,11 @@ class VerificationService:
                         "quantity": min(missing_qty, len(available_trays)),
                         "ids": [t.id for t in available_trays[:missing_qty]]
                     }
-                    # Add these to the available_trays list for object tracking
-                    self.available_trays.extend(list(available_trays[:missing_qty]))
+                    # Track available trays using only dictionaries (no list tracking)
             
             # Handle extra trays with this name (beyond required quantity)
             if found_qty > required_qty:
                 extra_trays = found_with_name[required_qty:]
-                self.extra_trays.extend(extra_trays)
                 
                 # Add to extra_items_dict
                 self.extra_items_dict["trays"][name] = {
@@ -417,7 +434,6 @@ class VerificationService:
         # Process any found trays that aren't in the required list at all
         for name, trays in found_trays_by_name.items():
             if name not in required_tray_names:
-                self.extra_trays.extend(trays)
                 self.extra_items_dict["trays"][name] = {
                     "quantity": len(trays),
                     "ids": [t.id for t in trays]
@@ -456,10 +472,13 @@ class VerificationService:
     
     def _update_item_states(self):
         """Set matched instruments to 'in_use' state."""
-        # Update instruments
-        for instrument in self.used_instruments:
-            instrument.status = 'in_use'
-            instrument.save(update_fields=['status'])
+        # Update instruments based on used_items_dict
+        for name, data in self.used_items_dict.get('instruments', {}).items():
+            # Get the IDs of used instruments
+            instrument_ids = data.get('ids', [])
+            
+            # Update status for each instrument
+            Instrument.objects.filter(id__in=instrument_ids).update(status='in_use')
     
     def _determine_verification_state(self):
         """
@@ -482,84 +501,43 @@ class VerificationService:
         self.verification_session.state = self._determine_verification_state()
         
         # Update JSON fields with our name-quantity based dictionaries
-        self.verification_session.used_items = self.used_items_dict
-        self.verification_session.missing_items = self.missing_items_dict
-        self.verification_session.available_items = self.available_items_dict
-        self.verification_session.available_matches = self._find_potential_replacements()
+        self.verification_session.used_items_dict = self.used_items_dict
+        self.verification_session.missing_items_dict = self.missing_items_dict
+        self.verification_session.extra_items_dict = self.extra_items_dict
+        self.verification_session.available_items_dict = self.available_items_dict
         
         # Save changes to database
         self.verification_session.save()
     
-    def _track_required_items_status(self, found_instruments, found_trays, required_instrument_names, required_tray_names):
+    def _format_items_for_tab(self, items_dict):
         """
-        Track all required instruments and trays, indicating whether each is present in the room.
+        Transform the nested dictionary structure into a flat list format for frontend tables.
         
         Args:
-            found_instruments: List of instruments found in the room
-            found_trays: List of trays found in the room
-            required_instrument_names: Dict mapping required instrument names to quantities
-            required_tray_names: Dict mapping required tray names to quantities
+            items_dict: Dictionary with instruments and trays grouped by name and quantity
+            
+        Returns:
+            List of items formatted for frontend tables with name, type, and quantity
         """
-        # Group found instruments and trays by name for easier checking
-        found_instruments_by_name = {}
-        for instrument in found_instruments:
-            if instrument.name not in found_instruments_by_name:
-                found_instruments_by_name[instrument.name] = []
-            found_instruments_by_name[instrument.name].append(instrument)
-            
-        found_trays_by_name = {}
-        for tray in found_trays:
-            if tray.name not in found_trays_by_name:
-                found_trays_by_name[tray.name] = []
-            found_trays_by_name[tray.name].append(tray)
+        result = []
         
-        # Process required instruments
-        for name, required_qty in required_instrument_names.items():
-            found_qty = len(found_instruments_by_name.get(name, []))
+        # Process instruments
+        for name, data in items_dict.get('instruments', {}).items():
+            result.append({
+                'name': name,
+                'type': 'Instrument',
+                'quantity': data.get('quantity', 0)
+            })
             
-            # Get all instruments with this name from database
-            all_instruments = list(Instrument.objects.filter(name=name))
+        # Process trays
+        for name, data in items_dict.get('trays', {}).items():
+            result.append({
+                'name': name,
+                'type': 'Tray',
+                'quantity': data.get('quantity', 0)
+            })
             
-            # Track each instrument by ID
-            for instrument in all_instruments:
-                is_in_room = instrument in found_instruments
-                
-                # Add to required_items_status
-                if name not in self.required_items_status["instruments"]:
-                    self.required_items_status["instruments"][name] = {
-                        "required_quantity": required_qty,
-                        "found_quantity": found_qty,
-                        "items": []
-                    }
-                
-                self.required_items_status["instruments"][name]["items"].append({
-                    "id": instrument.id,
-                    "is_in_room": is_in_room
-                })
-        
-        # Process required trays
-        for name, required_qty in required_tray_names.items():
-            found_qty = len(found_trays_by_name.get(name, []))
-            
-            # Get all trays with this name from database
-            all_trays = list(Tray.objects.filter(name=name))
-            
-            # Track each tray by ID
-            for tray in all_trays:
-                is_in_room = tray in found_trays
-                
-                # Add to required_items_status
-                if name not in self.required_items_status["trays"]:
-                    self.required_items_status["trays"][name] = {
-                        "required_quantity": required_qty,
-                        "found_quantity": found_qty,
-                        "items": []
-                    }
-                
-                self.required_items_status["trays"][name]["items"].append({
-                    "id": tray.id,
-                    "is_in_room": is_in_room
-                })
+        return result
     
     def _format_result(self):
         """
@@ -568,13 +546,40 @@ class VerificationService:
         Returns:
             Dict containing verification results with items grouped by name and quantity
         """
+        # Format output to match frontend tabs: Missing, Present, Extra, All Required
+        present_items = self._format_items_for_tab(self.used_items_dict)
+        missing_items = self._format_items_for_tab(self.missing_items_dict)
+        extra_items = self._format_items_for_tab(self.extra_items_dict)
+        
+        # Combine used and missing for All Required
+        required_items = []
+        required_items.extend(present_items)
+        required_items.extend(missing_items)
+        
         return {
             "verification_id": self.verification_session.id,
             "state": self.verification_session.state,
+            "tabs": {
+                "present": {
+                    "count": len(present_items),
+                    "items": present_items
+                },
+                "missing": {
+                    "count": len(missing_items),
+                    "items": missing_items
+                },
+                "extra": {
+                    "count": len(extra_items),
+                    "items": extra_items
+                },
+                "required": {
+                    "count": len(required_items),
+                    "items": required_items
+                }
+            },
+            # Keep original data structure for backward compatibility
             "used_items": self.used_items_dict,
             "missing_items": self.missing_items_dict,
             "extra_items": self.extra_items_dict,
-            "available_items": self.available_items_dict,
-            "required_items_status": self.required_items_status,
-            "available_matches": self.verification_session.available_matches
+            "available_items": self.available_items_dict
         }

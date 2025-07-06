@@ -19,8 +19,6 @@ class OperationSession(models.Model):
     end_time = models.DateTimeField(null=True)
     users = models.ManyToManyField('auth.User')
     state = models.CharField(max_length=50, choices=STATE_CHOICES, default='scheduled')
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
     
     def __str__(self):
         return f"Operation {self.id} - {self.operation_type} - {self.get_state_display()}"

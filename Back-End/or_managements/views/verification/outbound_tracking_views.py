@@ -6,9 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.shortcuts import get_object_or_404
 
-from ..models.operation_session import OperationSession
-from ..models.outbound_tracking import OutboundTracking
-from ..services.outbound_tracking_service import OutboundTrackingService
+from or_managements.permissions.role_permissions import IsDoctorOrNurse, IsAdmin
+
+from or_managements.models.operation_session import OperationSession
+from or_managements.models.outbound_tracking import OutboundTracking
+from or_managements.services.outbound_tracking_service import OutboundTrackingService
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,7 @@ class OutboundTrackingViewSet(viewsets.ViewSet):
     This ViewSet follows the verification service pattern, with a single endpoint
     that always performs a scan before returning status information.
     """
-    # Using default permission classes from project settings
+    permission_classes = [IsAdmin, IsDoctorOrNurse]
     
     @action(detail=True, methods=['GET'], url_path='status')
     def get_status(self, request, pk=None):

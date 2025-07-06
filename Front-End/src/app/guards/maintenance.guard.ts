@@ -5,31 +5,38 @@ import { AuthService } from '../services/auth.service';
 export const maintenanceGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  
+  console.log('DEBUG - Maintenance Guard - Checking access:', {
+    url: state.url,
+    path: route.routeConfig?.path,
+    isLoggedIn: authService.isLoggedIn(),
+    user: authService.getCurrentUser()?.username,
+    role: authService.getCurrentUser()?.role,
+    isAdmin: authService.isAdmin(),
+    isMaintenance: authService.isMaintenance()
+  });
 
   // For development/testing, allow access to maintenance pages
   // This will be removed in production
   if ((window as any).allowMaintenanceAccess === true) {
-    console.log('Maintenance access granted via override flag');
+    console.log('DEBUG - Maintenance access granted via override flag');
     return true;
   }
 
-  // Check if user is logged in and has maintenance role
-  if (authService.isLoggedIn() && authService.getCurrentUser()?.role === 'maintenance') {
+  // Use the AuthService's isMaintenance method for role checking
+  if (authService.isLoggedIn() && authService.isMaintenance()) {
+    console.log('DEBUG - Maintenance access granted: User has maintenance role');
     return true;
   }
   
-  // If we're in simulation mode, always allow access for testing
-  if (authService['simulationMode'] === true) {
-    console.log('Maintenance access granted via simulation mode');
-    localStorage.setItem('auth_user', JSON.stringify({
-      username: 'maintenance_user',
-      role: 'maintenance',
-      profile: { role: 'maintenance' }
-    }));
+  // If we have admin access, allow access as well
+  if (authService.isLoggedIn() && authService.isAdmin()) {
+    console.log('DEBUG - Maintenance access granted: User has admin role');
     return true;
   }
   
   // Redirect to login page if not authenticated or not a maintenance staff
+  console.log('DEBUG - Maintenance access denied: Not logged in or not maintenance/admin role');
   router.navigate(['/login']);
   return false;
 };
