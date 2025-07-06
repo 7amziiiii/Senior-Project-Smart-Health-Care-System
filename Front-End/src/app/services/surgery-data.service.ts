@@ -17,6 +17,8 @@ export interface Surgery {
   scheduledTime: string;
   roomNumber: string;
   requiredInstruments: Instrument[];
+  patient_name?: string;
+  state?: string;
 }
 
 @Injectable({
@@ -26,7 +28,7 @@ export class SurgeryDataService {
   private surgeriesSubject = new BehaviorSubject<Surgery[]>([]);
   private selectedSurgerySubject = new BehaviorSubject<Surgery | null>(null);
   private surgeries: Surgery[] = [];
-  private simulationMode = true; // Toggle between real API and simulation
+  private simulationMode = false; // Toggle between real API and simulation
 
   constructor(private http: HttpClient) {
     // Initialize with mock data
@@ -134,12 +136,23 @@ export class SurgeryDataService {
         this.surgeriesSubject.next(surgeries);
       });
     } else {
-      // Real API implementation
-      this.http.get<Surgery[]>(`${environment.apiUrl}/surgeries`).subscribe(surgeries => {
-        this.surgeries = surgeries;
-        this.surgeriesSubject.next(surgeries);
+      // Real API implementation - fetch operation sessions from backend
+      this.http.get<any[]>(`${environment.apiUrl}/operation-sessions/`).subscribe(sessions => {
+        // Map operation sessions to Surgery interface
+        this.surgeries = sessions.map(session => ({
+          id: session.id,
+          name: session.operation_type || 'Unknown Operation',
+          description: session.notes || '',
+          status: this.mapOperationSessionStateToStatus(session.state),
+          scheduledTime: session.start_time || new Date().toISOString(),
+          roomNumber: session.room || 'Unknown',
+          requiredInstruments: [],  // We'll populate this from other calls if needed
+          patient_name: session.patient_name || 'Unknown Patient',
+          state: session.state
+        }));
+        this.surgeriesSubject.next(this.surgeries);
       }, error => {
-        console.error('Error fetching surgeries:', error);
+        console.error('Error fetching operation sessions:', error);
         // Fallback to mock data if API fails
         this.simulateApiCall().subscribe(surgeries => {
           this.surgeries = surgeries;
@@ -186,5 +199,30 @@ export class SurgeryDataService {
 
   getInstrumentsNotInRoom(surgery: Surgery): Instrument[] {
     return surgery.requiredInstruments.filter(instrument => !instrument.inRoom);
+  }
+  
+  /**
+   * Maps the operation session state from the backend to a status that can be used in the frontend
+   * @param state The operation session state from the backend
+   */
+  private mapOperationSessionStateToStatus(state: string): 'scheduled' | 'ongoing' | 'completed' {
+    if (!state) return 'scheduled';
+    
+    // Map states based on the backend states
+    switch (state) {
+      case 'created':
+      case 'scheduled':
+      case 'pending':
+        return 'scheduled';
+      case 'verified':
+      case 'in_progress':
+      case 'verification_needed':
+        return 'ongoing';
+      case 'completed':
+      case 'outbound_cleared':
+        return 'completed';
+      default:
+        return 'scheduled';
+    }
   }
 }

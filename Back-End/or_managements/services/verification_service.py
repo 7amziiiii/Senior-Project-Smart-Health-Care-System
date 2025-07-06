@@ -71,7 +71,7 @@ class VerificationService:
         self.extra_items_dict = {"instruments": {}, "trays": {}}
         self.available_items_dict = {"instruments": {}, "trays": {}}
     
-    def perform_verification(self, scan_duration=2):
+    def perform_verification(self, scan_duration=5):
         """
         Perform one verification cycle.
         
@@ -202,7 +202,16 @@ class VerificationService:
         trays = []
         
         # Process each scan result (EPC)
-        for result in scan_results.get("tags", []):
+        # Handle both list format and dict with 'tags' key format
+        scan_items = scan_results if isinstance(scan_results, list) else scan_results.get("tags", [])
+        logger.info(f"Processing {len(scan_items)} detected tags")
+        
+        # Direct console output for debugging
+        print(f"\n\n[DEBUG] Processing {len(scan_items)} detected tags from scanner")
+        print(f"[DEBUG] Raw scan results: {scan_results}")
+        print(f"[DEBUG] Scan items: {scan_items}")
+        
+        for result in scan_items:
             epc = result.get('epc')
             if not epc:
                 continue
@@ -212,24 +221,58 @@ class VerificationService:
                 # Use tag_id field instead of epc since that's what the RFIDTag model uses
                 tag = RFIDTag.objects.get(tag_id=epc)
                 
+                print(f"[DEBUG] Found tag {tag.tag_id} in database")
                 logger.info(f"Found tag {tag.tag_id} in database")
                 
                 # Check for related instrument (using the reverse relation)
                 try:
                     # For OneToOne field, the reverse relation is a direct attribute
-                    instrument = tag.tag
+                    print(f"[DEBUG] Checking instrument relations for tag {tag.tag_id}")
+                    # Try direct attribute access first
+                    try:
+                        instrument = tag.instrument
+                        print(f"[DEBUG] Found direct instrument relation: {instrument}")
+                    except AttributeError:
+                        instrument = None
+                        print(f"[DEBUG] No direct 'instrument' attribute on tag")
+                        
+                    # If that didn't work, try the 'tag' attribute
+                    if not instrument:
+                        try:
+                            instrument = tag.tag
+                            print(f"[DEBUG] Found instrument via 'tag' attribute: {instrument}")
+                        except AttributeError:
+                            print(f"[DEBUG] No 'tag' attribute on tag either")
+                            instrument = None
+                    
+                    # Print all tag attributes to help debug
+                    print(f"[DEBUG] Tag attributes: {dir(tag)}")
+                    
                     if instrument and instrument not in instruments:
+                        print(f"[DEBUG] Adding instrument {instrument.name} to found list")
                         logger.info(f"Found instrument {instrument.name} with tag {tag.tag_id}")
                         instruments.append(instrument)
+                    else:
+                        print(f"[DEBUG] Tag {tag.tag_id} does not have a valid instrument relation")
+                        logger.warning(f"Tag {tag.tag_id} does not have a valid instrument relation")
                 except Instrument.DoesNotExist:
                     pass
                 
                 # Check for related trays (there could be multiple with ForeignKey)
-                related_trays = Tray.objects.filter(tag=tag)
-                for tray in related_trays:
-                    if tray not in trays:
-                        logger.info(f"Found tray {tray.name} with tag {tag.tag_id}")
-                        trays.append(tray)
+                try:
+                    related_trays = Tray.objects.filter(tag=tag)
+                    logger.info(f"Found {related_trays.count()} trays for tag {tag.tag_id}")
+                    
+                    for tray in related_trays:
+                        if tray not in trays:
+                            logger.info(f"Found tray {tray.name} (ID: {tray.id}) with tag {tag.tag_id}")
+                            trays.append(tray)
+                except Exception as e:
+                    logger.error(f"Error fetching trays for tag {tag.tag_id}: {str(e)}")
+                    
+                # If no instruments or trays found with this tag, log a clear warning
+                if not getattr(tag, 'instrument', None) and not getattr(tag, 'tag', None) and not related_trays.exists():
+                    logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray in the database")
                         
                 if not hasattr(tag, 'tag') and not related_trays:
                     logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray")
@@ -485,6 +528,36 @@ class VerificationService:
         # Save changes to database
         self.verification_session.save()
     
+    def _format_items_for_tab(self, items_dict):
+        """
+        Transform the nested dictionary structure into a flat list format for frontend tables.
+        
+        Args:
+            items_dict: Dictionary with instruments and trays grouped by name and quantity
+            
+        Returns:
+            List of items formatted for frontend tables with name, type, and quantity
+        """
+        result = []
+        
+        # Process instruments
+        for name, data in items_dict.get('instruments', {}).items():
+            result.append({
+                'name': name,
+                'type': 'Instrument',
+                'quantity': data.get('quantity', 0)
+            })
+            
+        # Process trays
+        for name, data in items_dict.get('trays', {}).items():
+            result.append({
+                'name': name,
+                'type': 'Tray',
+                'quantity': data.get('quantity', 0)
+            })
+            
+        return result
+    
     def _format_result(self):
         """
         Format result for API response using name-quantity based categorization.
@@ -492,12 +565,40 @@ class VerificationService:
         Returns:
             Dict containing verification results with items grouped by name and quantity
         """
+        # Format output to match frontend tabs: Missing, Present, Extra, All Required
+        present_items = self._format_items_for_tab(self.used_items_dict)
+        missing_items = self._format_items_for_tab(self.missing_items_dict)
+        extra_items = self._format_items_for_tab(self.extra_items_dict)
+        
+        # Combine used and missing for All Required
+        required_items = []
+        required_items.extend(present_items)
+        required_items.extend(missing_items)
+        
         return {
             "verification_id": self.verification_session.id,
             "state": self.verification_session.state,
+            "tabs": {
+                "present": {
+                    "count": len(present_items),
+                    "items": present_items
+                },
+                "missing": {
+                    "count": len(missing_items),
+                    "items": missing_items
+                },
+                "extra": {
+                    "count": len(extra_items),
+                    "items": extra_items
+                },
+                "required": {
+                    "count": len(required_items),
+                    "items": required_items
+                }
+            },
+            # Keep original data structure for backward compatibility
             "used_items": self.used_items_dict,
             "missing_items": self.missing_items_dict,
             "extra_items": self.extra_items_dict,
-            "available_items": self.available_items_dict,
-            "available_matches": self.verification_session.available_matches
+            "available_items": self.available_items_dict
         }

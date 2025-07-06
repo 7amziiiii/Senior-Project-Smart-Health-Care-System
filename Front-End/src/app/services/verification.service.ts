@@ -7,26 +7,104 @@ import VerificationPoller from '../utils/verification-poller.js';
 
 export interface VerificationStatus {
   verification_id: number;
-  state: 'complete' | 'incomplete' | 'failed';
+  state: 'complete' | 'incomplete' | 'failed' | 'valid';
+  // New tabs structure for UI
+  tabs?: {
+    present: {
+      count: number;
+      items: Array<{
+        name: string;
+        type: string;
+        quantity: number;
+      }>;
+    },
+    missing: {
+      count: number;
+      items: Array<{
+        name: string;
+        type: string;
+        quantity: number;
+      }>;
+    },
+    extra: {
+      count: number;
+      items: Array<{
+        name: string;
+        type: string;
+        quantity: number;
+      }>;
+    },
+    required: {
+      count: number;
+      items: Array<{
+        name: string;
+        type: string;
+        quantity: number;
+      }>;
+    }
+  };
+  // Legacy structure for backward compatibility
   used_items: {
-    instruments: Record<string, number>;
-    trays: Record<string, number>;
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
   };
   missing_items: {
-    instruments: Record<string, number>;
-    trays: Record<string, number>;
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
   };
   extra_items: {
-    instruments: Record<string, number>;
-    trays: Record<string, number>;
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
   };
   available_items: {
-    instruments: Record<string, number>;
-    trays: Record<string, number>;
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
   };
   available_matches: {
-    instruments: Record<string, number>;
-    trays: Record<string, number>;
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
+  };
+  required_items?: {
+    instruments: Record<string, any>;
+    trays: Record<string, any>;
+  };
+  // Field for tracking required items with their presence status
+  required_items_status?: {
+    instruments: Record<string, {
+      required_quantity: number;
+      found_quantity: number;
+      items: Array<{
+        id: number;
+        is_in_room: boolean;
+      }>;
+    }>;
+    trays: Record<string, {
+      required_quantity: number;
+      found_quantity: number;
+      items: Array<{
+        id: number;
+        is_in_room: boolean;
+      }>;
+    }>;
+  };
+  // New field for item counts by category and type
+  counts?: {
+    used: {
+      instruments: number;
+      trays: number;
+    };
+    missing: {
+      instruments: number;
+      trays: number;
+    };
+    extra: {
+      instruments: number;
+      trays: number;
+    };
+    available: {
+      instruments: number;
+      trays: number;
+    };
   };
   last_updated: string;
   error?: any;

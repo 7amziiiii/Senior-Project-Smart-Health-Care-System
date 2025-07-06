@@ -59,47 +59,45 @@
         <div class="instrument-tabs" *ngIf="selectedSurgery && verificationStatus">
           <div class="tab-headers">
             <div class="tab-header" [class.active]="activeTab === 'missing'" (click)="activeTab = 'missing'">
-              <i class="fas fa-exclamation-triangle"></i> Missing Instruments
-              <span class="count-badge">{{ getItemsCount('missing', 'instruments') }}</span>
+              <i class="fas fa-exclamation-triangle"></i> Missing Items
+              <span class="count-badge">{{ getItemsCount('missing', 'instruments') + getItemsCount('missing', 'trays') }}</span>
             </div>
             <div class="tab-header" [class.active]="activeTab === 'present'" (click)="activeTab = 'present'">
-              <i class="fas fa-check"></i> Present Instruments
-              <span class="count-badge">{{ getItemsCount('used', 'instruments') }}</span>
+              <i class="fas fa-check"></i> Present Items
+              <span class="count-badge">{{ getItemsCount('used', 'instruments') + getItemsCount('used', 'trays') }}</span>
             </div>
             <div class="tab-header" [class.active]="activeTab === 'extra'" (click)="activeTab = 'extra'">
-              <i class="fas fa-plus-circle"></i> Extra Instruments
-              <span class="count-badge">{{ getItemsCount('extra', 'instruments') }}</span>
+              <i class="fas fa-plus-circle"></i> Extra Items
+              <span class="count-badge">{{ getItemsCount('extra', 'instruments') + getItemsCount('extra', 'trays') }}</span>
             </div>
             <div class="tab-header" [class.active]="activeTab === 'all'" (click)="activeTab = 'all'">
               <i class="fas fa-list"></i> All Required
-              <span class="count-badge">{{ selectedSurgery.requiredInstruments.length }}</span>
+              <span class="count-badge">{{ getTotalRequiredItems() }}</span>
             </div>
           </div>
           
-          <!-- Missing Instruments Tab Content -->
+          <!-- Missing Items Tab Content -->
           <div class="tab-content" *ngIf="activeTab === 'missing'">
             <div class="instruments-table-container">
               <table class="instruments-table">
                 <thead>
                   <tr>
-                    <th>RFID Tag</th>
-                    <th>Instrument Name</th>
-                    <th>Status</th>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let instrument of getInstrumentsNotInRoom()" class="missing-row">
-                    <td class="tag-id">{{ instrument.id }}</td>
-                    <td>{{ instrument.name }}</td>
-                    <td class="status-cell">
-                      <span class="status-indicator missing">
-                        <i class="fas fa-times-circle"></i> Missing
-                      </span>
+                  <tr *ngIf="!hasCombinedItems('missing')">
+                    <td colspan="3" class="no-data-cell">
+                      <i class="fas fa-check-circle"></i> All required items are present
                     </td>
                   </tr>
-                  <tr *ngIf="getInstrumentsNotInRoom().length === 0">
-                    <td colspan="3" class="no-data-cell">
-                      <i class="fas fa-check-circle"></i> All instruments are present
+                  <tr *ngFor="let item of getCombinedItems('missing')" class="missing-row">
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.type === 'tray' ? 'Tray' : 'Instrument' }}</td>
+                    <td class="quantity-cell">
+                      <strong>{{ item.quantity }}</strong>
                     </td>
                   </tr>
                 </tbody>
@@ -107,30 +105,28 @@
             </div>
           </div>
           
-          <!-- Present Instruments Tab Content -->
+          <!-- Present Items Tab Content -->
           <div class="tab-content" *ngIf="activeTab === 'present'">
             <div class="instruments-table-container">
               <table class="instruments-table">
                 <thead>
                   <tr>
-                    <th>RFID Tag</th>
-                    <th>Instrument Name</th>
-                    <th>Status</th>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let instrument of getInstrumentsInRoom()" class="present-row">
-                    <td class="tag-id">{{ instrument.id }}</td>
-                    <td>{{ instrument.name }}</td>
-                    <td class="status-cell">
-                      <span class="status-indicator present">
-                        <i class="fas fa-check-circle"></i> Present
-                      </span>
+                  <tr *ngIf="!hasCombinedItems('used')">
+                    <td colspan="3" class="no-data-cell">
+                      <i class="fas fa-exclamation-triangle"></i> No items detected in room
                     </td>
                   </tr>
-                  <tr *ngIf="getInstrumentsInRoom().length === 0">
-                    <td colspan="3" class="no-data-cell">
-                      <i class="fas fa-exclamation-triangle"></i> No instruments detected in room
+                  <tr *ngFor="let item of getCombinedItems('used')" class="present-row">
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.type === 'tray' ? 'Tray' : 'Instrument' }}</td>
+                    <td class="quantity-cell">
+                      <strong>{{ item.quantity }}</strong>
                     </td>
                   </tr>
                 </tbody>
@@ -138,32 +134,28 @@
             </div>
           </div>
           
-          <!-- Extra Instruments Tab Content -->
+          <!-- Extra Items Tab Content -->
           <div class="tab-content" *ngIf="activeTab === 'extra'">
             <div class="instruments-table-container">
               <table class="instruments-table">
                 <thead>
                   <tr>
-                    <th>RFID Tag</th>
-                    <th>Instrument Name</th>
-                    <th>Status</th>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- This is a placeholder. In the real implementation, this would show unexpected instruments in the room -->
-                  <tr *ngIf="getItemsCount('extra', 'instruments') === 0">
+                  <tr *ngIf="!hasCombinedItems('extra')">
                     <td colspan="3" class="no-data-cell">
-                      <i class="fas fa-check-circle"></i> No unexpected instruments detected
+                      <i class="fas fa-check-circle"></i> No unexpected items detected
                     </td>
                   </tr>
-                  <!-- Placeholder for extra instruments (will be populated from real data) -->
-                  <tr *ngFor="let i of [1,2,3].slice(0, getItemsCount('extra', 'instruments'))" class="extra-row">
-                    <td class="tag-id">E-{{ 500 + i }}</td>
-                    <td>Unknown Instrument {{ i }}</td>
-                    <td class="status-cell">
-                      <span class="status-indicator extra">
-                        <i class="fas fa-plus-circle"></i> Unexpected
-                      </span>
+                  <tr *ngFor="let item of getCombinedItems('extra')" class="extra-row">
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.type === 'tray' ? 'Tray' : 'Instrument' }}</td>
+                    <td class="quantity-cell">
+                      <strong>{{ item.quantity }}</strong>
                     </td>
                   </tr>
                 </tbody>
@@ -171,27 +163,36 @@
             </div>
           </div>
           
-          <!-- All Required Instruments Tab Content -->
+          <!-- All Required Tab Content -->
           <div class="tab-content" *ngIf="activeTab === 'all'">
             <div class="instruments-table-container">
               <table class="instruments-table">
                 <thead>
                   <tr>
-                    <th>RFID Tag</th>
-                    <th>Instrument Name</th>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let instrument of selectedSurgery.requiredInstruments" 
-                      [ngClass]="{'present-row': instrument.inRoom, 'missing-row': !instrument.inRoom}">
-                    <td class="tag-id">{{ instrument.id }}</td>
-                    <td>{{ instrument.name }}</td>
+                  <tr *ngIf="!verificationStatus?.required_items">
+                    <td colspan="4" class="no-data-cell">
+                      <i class="fas fa-info-circle"></i> No required items defined for this operation
+                    </td>
+                  </tr>
+                  <tr *ngFor="let item of getCombinedItems('required')" 
+                      [ngClass]="{'present-row': !isItemMissing(item.name), 'missing-row': isItemMissing(item.name)}">
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.type === 'tray' ? 'Tray' : 'Instrument' }}</td>
+                    <td class="quantity-cell">
+                      <strong>{{ item.quantity }}</strong>
+                    </td>
                     <td class="status-cell">
-                      <span *ngIf="instrument.inRoom" class="status-indicator present">
+                      <span *ngIf="!isItemMissing(item.name)" class="status-indicator present">
                         <i class="fas fa-check-circle"></i> Present
                       </span>
-                      <span *ngIf="!instrument.inRoom" class="status-indicator missing">
+                      <span *ngIf="isItemMissing(item.name)" class="status-indicator missing">
                         <i class="fas fa-times-circle"></i> Missing
                       </span>
                     </td>
