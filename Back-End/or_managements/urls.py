@@ -52,6 +52,8 @@ from .views.verification.verification_views import VerificationViewSet
 from .views.verification.outbound_tracking_views import OutboundTrackingViewSet
 from .views.log import OutboundTrackingList
 from .views.ml_views import equipment_usage_logs, equipment_maintenance_history, procedure_stats
+from .views.equipment_request_views import (EquipmentRequestViewSet, available_equipment, 
+    pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats)
 
 # Router for API endpoints
 router = DefaultRouter()
@@ -59,6 +61,7 @@ router = DefaultRouter()
 # Register viewsets
 router.register(r'verification', VerificationViewSet, basename='verification')
 router.register(r'outbound-tracking', OutboundTrackingViewSet, basename='outbound-tracking')
+router.register(r'equipment-requests', EquipmentRequestViewSet, basename='equipment-requests')
 
 # URL patterns for the app
 urlpatterns = [
@@ -112,6 +115,13 @@ urlpatterns = [
     path('ml/equipment/usage/', equipment_usage_logs, name='ml-equipment-usage'),
     path('ml/equipment/maintenance/', equipment_maintenance_history, name='ml-equipment-maintenance'),
     path('ml/procedures/stats/', procedure_stats, name='ml-procedure-stats'),
+    
+    # Equipment Request Endpoints
+    path('equipment/available/', available_equipment, name='available-equipment'),
+    path('equipment/pending-requests/', pending_requests, name='pending-requests'),
+    path('equipment/in-use/', equipment_in_use, name='equipment-in-use'),
+    path('equipment/in-maintenance/', equipment_in_maintenance, name='equipment-in-maintenance'),
+    path('equipment/usage-stats/', equipment_usage_stats, name='equipment-usage-stats'),
     
     # Include router URLs for viewsets
     path('', include(router.urls)),

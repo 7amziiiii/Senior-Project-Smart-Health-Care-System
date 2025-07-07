@@ -2,14 +2,14 @@ from rest_framework import serializers
 from ..models.equipment_request import EquipmentRequest
 from ..models.large_equipment import LargeEquipment
 from ..serializers.large_equipment_serializer import LargeEquipmentSerializer
-from ..serializers.operation_session_serializer import OperationSessionSerializer
+from .operation_session_serializer import OperationSessionListSerializer
 
 
 class EquipmentRequestSerializer(serializers.ModelSerializer):
     """Serializer for the EquipmentRequest model"""
     
     equipment_details = LargeEquipmentSerializer(source='equipment', read_only=True)
-    operation_session_details = OperationSessionSerializer(source='operation_session', read_only=True)
+    operation_session_details = OperationSessionListSerializer(source='operation_session', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     requested_by_name = serializers.SerializerMethodField()
     
