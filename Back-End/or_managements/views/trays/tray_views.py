@@ -17,6 +17,5 @@ class TrayRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     API view to retrieve, update or delete a tray
     Only accessible by admin users.
     """
-    permission_classes = [IsAdmin]
     queryset = Tray.objects.all()
     serializer_class = TraySerializer

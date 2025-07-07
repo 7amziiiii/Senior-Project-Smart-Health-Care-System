@@ -165,14 +165,26 @@
         </div>
         
         <div *ngIf="rfidFound" class="registration-form">
+          <!-- Display linked instrument alert when tag is linked to an instrument -->
+          <div class="alert alert-warning" *ngIf="tagIsLinked && linkedAssetType === 'instrument'">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>This RFID tag is already linked to an instrument</strong>
+          </div>
           <div class="form-group">
             <label>RFID Tag ID:</label>
             <input type="text" [value]="foundRfidId" readonly>
           </div>
           
-          <div class="form-group">
+          <!-- Display instrument name if linked (editable in edit mode) -->
+          <div class="form-group" *ngIf="tagIsLinked && linkedAssetType === 'instrument'">
+            <label>Instrument Name:</label>
+            <input type="text" [(ngModel)]="newInstrumentName" [disabled]="!editMode">
+          </div>
+          
+          <!-- Only show instrument type field when registering a new instrument (not in edit mode) -->
+          <div class="form-group" *ngIf="!tagIsLinked || (tagIsLinked && !editMode)">
             <label>Instrument Type:</label>
-            <select [(ngModel)]="selectedInstrumentType">
+            <select [(ngModel)]="selectedInstrumentType" [disabled]="tagIsLinked">
               <option value="">Select an instrument type</option>
               <option *ngFor="let type of instrumentTypes" [value]="type.id">{{ type.name }}</option>
             </select>
@@ -180,7 +192,7 @@
           
           <div class="form-group">
             <label>Instrument Status:</label>
-            <select [(ngModel)]="newInstrumentStatus">
+            <select [(ngModel)]="newInstrumentStatus" [disabled]="tagIsLinked && !editMode">
               <option value="available">Available</option>
               <option value="in_use">In Use</option>
               <option value="missing">Missing</option>
@@ -190,15 +202,26 @@
           
           <div class="form-group">
             <label>Link to Tray (Optional):</label>
-            <select [(ngModel)]="selectedTrayId">
+            <select [(ngModel)]="selectedTrayId" [disabled]="tagIsLinked && !editMode">
               <option value="">No Tray</option>
-              <option *ngFor="let tray of availableTrays" [value]="tray.id">{{ tray.name }}</option>
+              <option *ngFor="let tray of availableTrays" [value]="tray.id">{{ tray.name }} ({{ tray.type || 'Standard' }} Tray)</option>
             </select>
           </div>
           
-          <div class="form-actions">
+          <div class="form-actions" *ngIf="!tagIsLinked">
             <button class="submit-btn" (click)="saveInstrument()">Register Instrument</button>
             <button class="cancel-btn" (click)="cancelRegistration()">Cancel</button>
+          </div>
+          
+          <div class="form-actions" *ngIf="tagIsLinked && !editMode">
+            <button class="edit-btn" (click)="enableEditMode()">Edit</button>
+            <button class="delete-btn" (click)="deleteInstrument()">Delete</button>
+            <button class="cancel-btn" (click)="cancelRegistration()">Cancel</button>
+          </div>
+          
+          <div class="form-actions" *ngIf="tagIsLinked && editMode">
+            <button class="submit-btn" (click)="updateInstrument()">Save Changes</button>
+            <button class="cancel-btn" (click)="cancelEditMode()">Cancel</button>
           </div>
         </div>
       </div>
