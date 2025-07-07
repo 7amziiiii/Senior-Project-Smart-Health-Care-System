@@ -65,7 +65,7 @@ export const routes: Routes = [
   { path: 'maintenance', component: MaintenanceDashboardComponent, canActivate: [maintenanceGuard], data: { routeId: 'maintenance' } },
   { path: 'instruments-verification', component: InstrumentsVerificationComponent, canActivate: [medicalStaffGuard] },
   { path: 'outbound-tracking', component: OutboundTrackingComponent, canActivate: [medicalStaffGuard] },
-  { path: 'equipment-tracking', component: EquipmentTrackingComponent, canActivate: [medicalStaffGuard] },
+  { path: 'equipment-tracking/:surgeryId', component: EquipmentTrackingComponent, canActivate: [medicalStaffGuard] },
   { path: 'equipment-overview', component: EquipmentOverviewComponent, canActivate: [maintenanceGuard] },
   { path: 'predictive-maintenance', component: PredictiveMaintenanceComponent, canActivate: [maintenanceGuard] },
   { path: '**', redirectTo: 'login' } // Redirect invalid routes to login

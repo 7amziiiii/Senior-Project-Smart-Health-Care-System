@@ -1,179 +1,182 @@
-<div class="maintenance-dashboard">
-  <!-- Top navigation bar -->
-  <nav class="top-nav">
-    <div class="container">
-      <div class="nav-left">
-        <button class="btn-back" (click)="goBack()">
+<div class="predictive-maintenance-container">
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <button class="back-button" (click)="goBack()">
           <i class="fas fa-arrow-left"></i> Back
         </button>
         <h1>Predictive Maintenance</h1>
       </div>
-      <div class="nav-right">
-        <span class="date-display">{{ today | date:'MMM d, y' }}</span>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Page content -->
-  <div class="content-container">
-    <div class="dashboard-header">
-      <h2>Predictive Equipment Maintenance</h2>
-      <div class="action-bar">
-        <button class="btn-primary refresh-btn" (click)="refreshPredictions()">
-          <i class="fas fa-sync-alt"></i> Refresh Predictions
-        </button>
-        <span class="ml-status" [class.ml-active]="mlApiAvailable">
-          <i class="fas fa-brain"></i> ML Service: {{ mlApiAvailable ? 'Active' : 'Unavailable' }}
-        </span>
-      </div>
-    </div>
-    
-    <div class="dashboard-summary">
-      <div class="summary-card maintenance-required">
-        <div class="card-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <div class="card-content">
-          <h3>Need Maintenance</h3>
-          <div class="card-value">{{ needMaintenanceCount }}</div>
-        </div>
-      </div>
-
-      <div class="summary-card maintenance-ok">
-        <div class="card-icon">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="card-content">
-          <h3>Good Condition</h3>
-          <div class="card-value">{{ goodConditionCount }}</div>
-        </div>
-      </div>
-
-      <div class="summary-card total-equipment">
-        <div class="card-icon">
-          <i class="fas fa-stethoscope"></i>
-        </div>
-        <div class="card-content">
-          <h3>Total Equipment</h3>
-          <div class="card-value">{{ totalEquipmentCount }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Equipment Sections -->
-    <div class="dashboard-section">
-      <div class="section-header maintenance-needed">
-        <i class="fas fa-tools"></i>
-        <h2>Equipment Needing Maintenance</h2>
-      </div>
-      <div class="equipment-list">
-        <!-- Equipment Item 1 -->
-        <div class="equipment-item" *ngFor="let equipment of equipmentList | slice:0:2" [class.needs-maintenance]="equipment.needsMaintenance">
-          <div class="item-header">
-            <h3>{{ equipment.name }}</h3>
-            <div class="maintenance-badge" [class.good]="!equipment.needsMaintenance">
-              {{ equipment.needsMaintenance ? 'Maintenance Required' : 'No Maintenance Needed' }}
-            </div>
-          </div>
-          <div class="item-details">
-            <div class="detail-grid">
-              <div class="detail-group">
-                <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ equipment.type }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Location:</span>
-                <span class="detail-value">{{ equipment.location }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Last Service:</span>
-                <span class="detail-value">{{ equipment.lastService }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Equipment ID:</span>
-                <span class="detail-value">{{ equipment.equipmentId }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Days Since Service:</span>
-                <span class="detail-value">{{ equipment.daysSinceMaintenance }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Total Usage Hours:</span>
-                <span class="detail-value">{{ equipment.totalUsageHours }}</span>
-              </div>
+      <div class="header-right">
+        <div class="notification-area">
+          <button class="notification-button" (click)="toggleNotifications()">
+            <i class="fas fa-bell"></i>
+            <span *ngIf="hasNewRequests" class="notification-badge">{{ requestedEquipmentCount }}</span>
+          </button>
+          
+          <!-- Notification dropdown -->
+          <div *ngIf="showNotifications" class="notification-dropdown">
+            <div class="notification-header">
+              <h3>Equipment Requests</h3>
+              <button class="close-button" (click)="toggleNotifications()">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
             
-            <div class="prediction-details" *ngIf="equipment.confidence !== undefined">
-              <div class="confidence-meter">
-                <div class="confidence-label">Maintenance Prediction Confidence</div>
-                <div class="meter-container">
-                  <div class="meter-fill" [style.width.%]="equipment.confidence * 100"></div>
-                  <span class="confidence-value">{{ (equipment.confidence * 100).toFixed(1) }}%</span>
+            <div class="notification-list">
+              <div *ngIf="equipmentRequests.length === 0" class="empty-notification">
+                <p>No equipment requests at this time.</p>
+              </div>
+              
+              <div *ngFor="let request of equipmentRequests" 
+                   [ngClass]="{'notification-item': true, 'new-request': request.status === 'requested'}">
+                <div class="notification-content">
+                  <div class="notification-title">
+                    <strong>{{ request.equipment.name }}</strong>
+                    <span [ngClass]="{
+                      'status-badge': true,
+                      'requested': request.status === 'requested',
+                      'in-use': request.status === 'in_use',
+                      'returned': request.status === 'returned',
+                      'maintenance': request.status === 'maintenance'
+                    }">{{ request.status }}</span>
+                  </div>
+                  <div class="notification-details">
+                    <p>Surgery ID: {{ request.operation_session }}</p>
+                    <p>Equipment ID: {{ request.equipment.equipment_id }}</p>
+                    <p>Request Time: {{ request.check_out_time | date:'short' }}</p>
+                  </div>
+                  <div *ngIf="request.status === 'requested'" class="notification-actions">
+                    <button class="fulfill-button" *ngIf="request.id !== undefined" (click)="fulfillRequest(request.id)">
+                      <i class="fas fa-check"></i> Fulfill Request
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-            
-
           </div>
+        </div>
+        
+        <div class="date-display">
+          <span>{{ today | date:'MMM d, y' }}</span>
         </div>
       </div>
     </div>
+  </header>
 
-    <div class="dashboard-section">
-      <div class="section-header maintenance-ok">
-        <i class="fas fa-check-circle"></i>
-        <h2>Equipment in Good Condition</h2>
-      </div>
-      <div class="equipment-list">
-        <div class="equipment-item" *ngFor="let equipment of equipmentList | slice:2:6" [class.needs-maintenance]="equipment.needsMaintenance">
-          <div class="item-header">
-            <h3>{{ equipment.name }}</h3>
-            <div class="maintenance-badge" [class.good]="!equipment.needsMaintenance">
-              {{ equipment.needsMaintenance ? 'Maintenance Required' : 'No Maintenance Needed' }}
-            </div>
+  <!-- Main content area -->
+  <div class="main-content">
+    <div class="overview-view">
+      <!-- Model metrics section -->
+      <div class="model-metrics-section">
+        <h2>Predictive Equipment Maintenance</h2>
+        <div class="metrics-cards">
+          <div class="metric-card">
+            <div class="metric-value">{{ needMaintenanceCount }}</div>
+            <div class="metric-label">Need Maintenance</div>
           </div>
-          <div class="item-details">
-            <div class="detail-grid">
-              <div class="detail-group">
-                <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ equipment.type }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Location:</span>
-                <span class="detail-value">{{ equipment.location }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Last Service:</span>
-                <span class="detail-value">{{ equipment.lastService }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Equipment ID:</span>
-                <span class="detail-value">{{ equipment.equipmentId }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Days Since Service:</span>
-                <span class="detail-value">{{ equipment.daysSinceMaintenance }}</span>
-              </div>
-              <div class="detail-group">
-                <span class="detail-label">Total Usage Hours:</span>
-                <span class="detail-value">{{ equipment.totalUsageHours }}</span>
-              </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ goodConditionCount }}</div>
+            <div class="metric-label">Good Condition</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">{{ totalEquipmentCount }}</div>
+            <div class="metric-label">Total Equipment</div>
+          </div>
+          <div class="metric-card api-status">
+            <div class="metric-value">
+              <i class="fas fa-check-circle" [class.active]="mlApiAvailable"></i>
             </div>
-            
-            <div class="prediction-details" *ngIf="equipment.confidence !== undefined">
-              <div class="confidence-meter">
-                <div class="confidence-label">Maintenance Prediction Confidence</div>
-                <div class="meter-container">
-                  <div class="meter-fill" [style.width.%]="equipment.confidence * 100"></div>
-                  <span class="confidence-value">{{ (equipment.confidence * 100).toFixed(1) }}%</span>
+            <div class="metric-label">ML Service: {{ mlApiAvailable ? 'Active' : 'Unavailable' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Predictions section -->
+      <div class="predictions-section">
+        <!-- High risk / Needs Maintenance -->
+        <div class="risk-category high-risk-section">
+          <h2>
+            <i class="fas fa-exclamation-triangle"></i>
+            Equipment Needing Maintenance
+          </h2>
+          <div class="prediction-cards">
+            <div *ngFor="let equipment of getMaintenanceEquipment()" class="prediction-card">
+              <div class="card-header">
+                <h3>{{ equipment.name }}</h3>
+              </div>
+              <div class="card-body">
+                <div class="prediction-detail">
+                  <span class="label">Type:</span> {{ equipment.type }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Location:</span> {{ equipment.location }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Last Service:</span> {{ equipment.lastService }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Equipment ID:</span> {{ equipment.equipmentId }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Days Since:</span> {{ equipment.daysSinceMaintenance }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Usage Hours:</span> {{ equipment.totalUsageHours }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Confidence:</span> {{ equipment.confidence ? (equipment.confidence * 100).toFixed(1) : 'N/A' }}%
                 </div>
               </div>
+              <div class="card-footer">
+                <button class="view-details-btn">
+                  <i class="fas fa-info-circle"></i> View Details
+                </button>
+              </div>
             </div>
-            
+          </div>
+        </div>
 
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">Mar 28, 2025</span>
+        <!-- Low risk / Good condition -->
+        <div class="risk-category low-risk-section">
+          <h2>
+            <i class="fas fa-check-circle"></i>
+            Equipment in Good Condition
+          </h2>
+          <div class="prediction-cards">
+            <div *ngFor="let equipment of getGoodConditionEquipment()" class="prediction-card">
+              <div class="card-header">
+                <h3>{{ equipment.name }}</h3>
+              </div>
+              <div class="card-body">
+                <div class="prediction-detail">
+                  <span class="label">Type:</span> {{ equipment.type }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Location:</span> {{ equipment.location }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Last Service:</span> {{ equipment.lastService }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Equipment ID:</span> {{ equipment.equipmentId }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Days Since:</span> {{ equipment.daysSinceMaintenance }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Usage Hours:</span> {{ equipment.totalUsageHours }}
+                </div>
+                <div class="prediction-detail">
+                  <span class="label">Confidence:</span> {{ equipment.confidence ? (equipment.confidence * 100).toFixed(1) : 'N/A' }}%
+                </div>
+              </div>
+              <div class="card-footer">
+                <button class="view-details-btn">
+                  <i class="fas fa-info-circle"></i> View Details
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { EquipmentService } from '../../services/equipment.service';
 
 @Component({
   selector: 'app-maintenance-dashboard',
@@ -15,15 +16,14 @@ export class MaintenanceDashboardComponent implements OnInit {
   username: string = '';
   featureSelected: string | null = null;
   
+  // Equipment requests to be displayed in the dashboard
+  equipmentRequests: any[] = [];
+  showRequestsTab = true;
+  requestsLoading = false;
+  hasNewRequests = false;
+  
   // Features available in the maintenance dashboard
   features = [
-    {
-      id: 'equipment-requests',
-      title: 'Equipment Requests',
-      description: 'View and manage equipment requests from medical staff',
-      icon: 'fa-clipboard-list',
-      route: '/equipment-requests'
-    },
     {
       id: 'equipment-overview',
       title: 'Equipment Overview',
@@ -42,7 +42,8 @@ export class MaintenanceDashboardComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private equipmentService: EquipmentService
   ) {}
 
   ngOnInit(): void {
@@ -63,6 +64,24 @@ export class MaintenanceDashboardComponent implements OnInit {
     if (feature) {
       this.router.navigate([feature.route]);
     }
+  }
+
+  fulfillRequest(requestId: number): void {
+    // Update request status
+    this.equipmentService.fulfillRequest(requestId).subscribe({
+      next: (updatedRequest) => {
+        if (updatedRequest) {
+          // Find and update the request in our local array
+          const index = this.equipmentRequests.findIndex(req => req.id === requestId);
+          if (index !== -1) {
+            this.equipmentRequests[index].status = 'in_use';
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Error fulfilling request:', error);
+      }
+    });
   }
   
   logout(): void {

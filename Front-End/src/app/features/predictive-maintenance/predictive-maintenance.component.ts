@@ -1,7 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MlService, PredictionRequest } from '../../services/ml-service.service';
+import { EquipmentService } from '../../services/equipment.service';
+import { EquipmentRequest } from '../../models/large-equipment.model';
+import { Subscription } from 'rxjs';
 
 interface Equipment {
   id: number;
@@ -25,7 +28,7 @@ interface Equipment {
   templateUrl: './predictive-maintenance.component.html',
   styleUrls: ['./predictive-maintenance.component.scss']
 })
-export class PredictiveMaintenanceComponent implements OnInit {
+export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   today = new Date();
   equipmentList: Equipment[] = [
     {
@@ -118,15 +121,66 @@ export class PredictiveMaintenanceComponent implements OnInit {
   goodConditionCount = 0;
   totalEquipmentCount = 0;
   mlApiAvailable = false;
+  selectedFilter: string = 'all';
+  loading = false;
+  
+  // Equipment request notifications
+  equipmentRequests: EquipmentRequest[] = [];
+  hasNewRequests = false;
+  showNotifications = false;
+  requestedEquipmentCount = 0;
+  private requestsSubscription: Subscription = new Subscription();
 
-  constructor(private router: Router, private mlService: MlService) { }
+  constructor(
+    private router: Router,
+    private mlService: MlService,
+    private equipmentService: EquipmentService
+  ) { }
   
   ngOnInit(): void {
     this.totalEquipmentCount = this.equipmentList.length;
-    this.updateMaintenanceCounts();
     this.checkMlApiAvailability();
+    this.refreshPredictions();
+    this.subscribeToEquipmentRequests();
   }
-
+  
+  ngOnDestroy(): void {
+    if (this.requestsSubscription) {
+      this.requestsSubscription.unsubscribe();
+    }
+  }
+  
+  subscribeToEquipmentRequests(): void {
+    this.requestsSubscription = this.equipmentService.getEquipmentRequests().subscribe(requests => {
+      this.equipmentRequests = requests;
+      
+      // Calculate requested equipment count
+      this.requestedEquipmentCount = requests.filter(req => req.status === 'requested').length;
+      
+      // Mark as new if there are any requests with status 'requested'
+      this.hasNewRequests = this.requestedEquipmentCount > 0;
+    });
+  }
+  
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    if (this.showNotifications) {
+      this.hasNewRequests = false; // Reset notification badge when viewed
+    }
+  }
+  
+  fulfillRequest(requestId: number): void {
+    this.equipmentService.fulfillRequest(requestId).subscribe(updatedRequest => {
+      if (updatedRequest) {
+        // Request was successfully fulfilled
+        const index = this.equipmentRequests.findIndex(req => req.id === requestId);
+        if (index !== -1) {
+          this.equipmentRequests[index].status = 'in_use';
+        }
+      }
+    });
+  }
+  
   goBack() {
     this.router.navigate(['/dashboard']);
   }
@@ -134,6 +188,15 @@ export class PredictiveMaintenanceComponent implements OnInit {
   updateMaintenanceCounts(): void {
     this.needMaintenanceCount = this.equipmentList.filter(eq => eq.needsMaintenance).length;
     this.goodConditionCount = this.equipmentList.filter(eq => !eq.needsMaintenance).length;
+  }
+  
+  // Filter methods to replace pipe usage
+  getMaintenanceEquipment(): Equipment[] {
+    return this.equipmentList.filter(equipment => equipment.needsMaintenance);
+  }
+  
+  getGoodConditionEquipment(): Equipment[] {
+    return this.equipmentList.filter(equipment => !equipment.needsMaintenance);
   }
   
   checkMlApiAvailability(): void {
