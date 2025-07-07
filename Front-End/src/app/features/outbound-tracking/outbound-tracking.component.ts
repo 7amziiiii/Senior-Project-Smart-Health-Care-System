@@ -21,9 +21,15 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
   scanning = false;
   scanComplete = false;
   roomCleared = false;
+  activeTab: 'remaining' | 'leavet' | 'allreq' = 'remaining';
   
   // Data for tracking results
   remainingItems: any[] = [];
+  remainingInstruments: any[] = [];
+  remainingTrays: any[] = [];
+  extraItems: any[] = [];
+  extraInstruments: any[] = [];
+  extraTrays: any[] = [];
   usedItems: any[] = [];
   lastScanTimestamp: string | null = null;
   
@@ -42,6 +48,11 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
       (data: Surgery[]) => {
         this.surgeries = data;
         this.loading = false;
+        
+        // Automatically select the first surgery if available
+        if (this.surgeries.length > 0) {
+          this.selectSurgery(this.surgeries[0]);
+        }
       },
       (error: any) => {
         console.error('Error fetching surgeries', error);
@@ -54,6 +65,11 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
     this.selectedSurgery = surgery;
     this.scanComplete = false;
     this.remainingItems = [];
+    this.remainingInstruments = [];
+    this.remainingTrays = [];
+    this.extraItems = [];
+    this.extraInstruments = [];
+    this.extraTrays = [];
     this.usedItems = [];
     this.roomCleared = false;
     
@@ -144,19 +160,95 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
    */
   private processTrackingResponse(response: OutboundTrackingResponse): void {
     this.roomCleared = response.room_cleared;
-    this.lastScanTimestamp = response.scan_timestamp || null;
+    this.lastScanTimestamp = response.scan_time || null;
     
-    // Process remaining items
-    this.remainingItems = [
-      ...(response.remaining_items.instruments || []),
-      ...(response.remaining_items.trays || [])
-    ];
+    console.log('Processing outbound tracking response:', response);
     
-    // Process used items
-    this.usedItems = [
-      ...(response.used_items.instruments || []),
-      ...(response.used_items.trays || [])
-    ];
+    // Process remaining items - convert dictionary to array with proper type tagging
+    const formattedRemainingInstruments = Object.entries(response.remaining_items.instruments || {}).map(([name, item]) => ({
+      ...item,
+      name: name,  // Use the key (name) as the item name
+      type: 'instrument',
+      quantity: item.quantity || 0,
+      ids: item.ids || []
+    }));
+    
+    const formattedRemainingTrays = Object.entries(response.remaining_items.trays || {}).map(([name, item]) => ({
+      ...item,
+      name: name,  // Use the key (name) as the item name
+      type: 'tray',
+      quantity: item.quantity || 0,
+      ids: item.ids || []
+    }));
+    
+    // Set separate arrays for instruments and trays
+    this.remainingInstruments = formattedRemainingInstruments;
+    this.remainingTrays = formattedRemainingTrays;
+    
+    // Combine all remaining items for backward compatibility
+    this.remainingItems = [...formattedRemainingInstruments, ...formattedRemainingTrays];
+    
+    // Process extra items - convert dictionary to array with proper type tagging
+    const formattedExtraInstruments = Object.entries(response.extra_items.instruments || {}).map(([name, item]) => ({
+      ...item,
+      name: name,  // Use the key (name) as the item name
+      type: 'instrument',
+      quantity: item.quantity || 0,
+      ids: item.ids || []
+    }));
+    
+    const formattedExtraTrays = Object.entries(response.extra_items.trays || {}).map(([name, item]) => ({
+      ...item,
+      name: name,  // Use the key (name) as the item name
+      type: 'tray',
+      quantity: item.quantity || 0,
+      ids: item.ids || []
+    }));
+    
+    // Set separate arrays for instruments and trays
+    this.extraInstruments = formattedExtraInstruments;
+    this.extraTrays = formattedExtraTrays;
+    
+    // Combine all extra items for backward compatibility
+    this.extraItems = [...formattedExtraInstruments, ...formattedExtraTrays];
+    
+    // Process used items - convert dictionary to array with proper type tagging
+    const formattedUsedItems: Array<{
+      name: string;
+      type: string;
+      quantity: number;
+      ids: number[];
+      [key: string]: any;
+    }> = [];
+    
+    // Process used instruments
+    Object.entries(response.used_items?.instruments || {}).forEach(([name, item]) => {
+      formattedUsedItems.push({
+        ...item,
+        name: name,
+        type: 'instrument',
+        quantity: item.quantity || 0,
+        ids: item.ids || []
+      });
+    });
+    
+    // Process used trays
+    Object.entries(response.used_items?.trays || {}).forEach(([name, item]) => {
+      formattedUsedItems.push({
+        ...item,
+        name: name,
+        type: 'tray',
+        quantity: item.quantity || 0,
+        ids: item.ids || []
+      });
+    });
+    
+    this.usedItems = formattedUsedItems;
+    
+    console.log('Processed remaining instruments:', this.remainingInstruments);
+    console.log('Processed remaining trays:', this.remainingTrays);
+    console.log('Processed extra instruments:', this.extraInstruments);
+    console.log('Processed extra trays:', this.extraTrays);
   }
   
   // Helper methods for template
@@ -174,6 +266,24 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
   
   isSurgeryCompleted(surgery: Surgery): boolean {
     return surgery.status === 'completed';
+  }
+  
+  /**
+   * Check if an item is remaining in the room
+   * @param itemName Name of the item to check
+   * @param itemType Type of the item (instrument or tray)
+   * @returns True if the item is still in the room, false if retrieved
+   */
+  isItemRemaining(itemName: string, itemType: string): boolean {
+    // Check instruments
+    if (itemType.toLowerCase() === 'instrument') {
+      return this.remainingInstruments.some(item => item.name === itemName);
+    }
+    // Check trays
+    else if (itemType.toLowerCase() === 'tray') {
+      return this.remainingTrays.some(item => item.name === itemName);
+    }
+    return false;
   }
   
   ngOnDestroy(): void {

@@ -24,7 +24,7 @@ from or_managements.models import (
     Tray
 )
 from or_managements.models.outbound_tracking import OutboundTracking
-from or_managements.scripts.rfid_scanner import scan_rfid_tags
+from or_managements.scripts.test import scan_rfid_tags
 
 logger = logging.getLogger(__name__)
 
@@ -59,62 +59,105 @@ class OutboundTrackingService:
                 "Verification must be completed before outbound tracking."
             )
         
-        # Track items that remain in the room
+        # Get or create an outbound tracking record
+        self.outbound_check = self._get_or_create_outbound_tracking()
+        
+        # Load existing data from the outbound tracking record if it exists
+        self.remaining_items = self.outbound_check.remaining_items or {"instruments": {}, "trays": {}}
+        self.extra_items = self.outbound_check.extra_items or {"instruments": {}, "trays":{}}
+        
+        # Ensure dictionaries have the correct structure
+        for dict_type in [self.remaining_items, self.extra_items]:
+            if "instruments" not in dict_type:
+                dict_type["instruments"] = {}
+            if "trays" not in dict_type:
+                dict_type["trays"] = {}
+        
+        # Track items that remain in the room - will be populated from remaining_items_dict when needed
         self.remaining_instruments = []
         self.remaining_trays = []
         
-        # Format for tracking remaining items
-        self.remaining_items_dict = {"instruments": {}, "trays": {}}
-        
-        # Track extra items (not used in operation but found)
+        # Track extra items (not used in operation but found) - will be populated from extra_items_dict when needed
         self.extra_instruments = []
         self.extra_trays = []
-        self.extra_items_dict = {"instruments": {}, "trays": {}}
         
         # Last scan results
         self.last_scan_time = None
         self.last_scan_results = None
         
-        # Get or create an outbound tracking record
-        self.outbound_check = self._get_or_create_outbound_tracking()
-        
-    def perform_outbound_check(self, scan_duration=3, verbose=False):
+    def perform_outbound_check(self, scan_duration=5, verbose=True):
         """
-        Perform outbound tracking check.
-        
+        Perform an outbound tracking check to identify which instruments and trays
+        are still present in the operation room after the operation has concluded.
+            
         Args:
-            scan_duration: Duration to scan for RFID tags (in seconds)
-            verbose: Whether to print verbose output
+            scan_duration: How long to scan for RFID tags (in seconds)
+            verbose: Whether to print detailed logs
             
         Returns:
             Dict containing outbound tracking results
         """
-        # Reset tracking lists
+        logger.info(f"===== STARTING OUTBOUND CHECK for session {self.operation_session.id} =====")
+        
+        # Get or create the outbound tracking record (reuse existing if it exists)
+        if not hasattr(self, 'outbound_check') or not self.outbound_check:
+            self.outbound_check = self._get_or_create_outbound_tracking()
+            logger.debug(f"Got outbound check record: {self.outbound_check.id}")
+        
+        # Reset dictionaries for this scan (non-cumulative tracking)
+        self.remaining_items = {"instruments": {}, "trays": {}}
+        self.extra_items = {"instruments": {}, "trays": {}}
+        logger.debug("Reset tracking dictionaries for fresh scan")
+                
+        # Reset instance lists for this scan cycle - these are temporary
+        # They'll be populated from the scan and used to update self.remaining_items and self.extra_items
         self.remaining_instruments = []
         self.remaining_trays = []
         self.extra_instruments = []
         self.extra_trays = []
-        self.remaining_items_dict = {"instruments": {}, "trays": {}}
-        self.extra_items_dict = {"instruments": {}, "trays": {}}
+        logger.debug("Reset tracking lists for fresh scan")
+        
+        # Get items that were used in the operation from the verification session
+        used_items = self.verification_session.used_items_dict
+        logger.debug(f"Used items from verification: {used_items}")
+        
+        # Check if used_items has the expected structure
+        if not isinstance(used_items, dict):
+            logger.error(f"Used items is not a dictionary: {type(used_items)}")
+        elif "instruments" not in used_items or "trays" not in used_items:
+            logger.error(f"Used items missing expected keys: {used_items.keys()}")
+        else:
+            logger.info(f"Used items count: {len(used_items.get('instruments', {}))} instruments, {len(used_items.get('trays', {}))} trays")
         
         # Scan for tags
+        logger.info(f"Starting RFID scan for {scan_duration} seconds")
         scan_results = self._scan_for_tags(scan_duration, verbose)
         self.last_scan_time = timezone.now()
         self.last_scan_results = scan_results
+        logger.debug(f"Scan complete. Raw scan results: {scan_results}")
+        if "tags" in scan_results:
+            logger.info(f"Scan detected {len(scan_results.get('tags', []))} tags")
+        else:
+            logger.warning("Scan results missing 'tags' key")
+            logger.debug(f"Unexpected scan result format: {scan_results}")
+        
+        # Log each tag found
+        for i, tag in enumerate(scan_results.get("tags", [])):
+            logger.debug(f"Tag {i+1}: {tag}")
         
         # Map EPCs to database objects
         found_instruments, found_trays = self._map_epcs_to_objects(scan_results)
         
         # Get used items from verification session
-        used_items = self.verification_session.used_items
+        used_items = self.verification_session.used_items_dict
         
         # Check which found items were used in the operation
         self._identify_remaining_items(found_instruments, found_trays, used_items)
         
-        # Update operation session with room status
+        # Update operation session
         self._update_operation_session()
         
-        # Return results
+        # Return formatted result
         return self._format_result()
     
     def get_outbound_status(self):
@@ -188,10 +231,13 @@ class OutboundTrackingService:
         instruments = []
         trays = []
         
+        logger.info(f"Mapping {len(scan_results.get('tags', []))} EPCs to database objects")
+        
         # Process each scan result (EPC)
-        for result in scan_results.get("tags", []):
+        for i, result in enumerate(scan_results.get("tags", [])):
             epc = result.get('epc')
             if not epc:
+                logger.warning(f"Scan result {i+1} missing EPC")
                 continue
                 
             # Try to find a tag with this EPC (stored as tag_id in the database)
@@ -210,21 +256,26 @@ class OutboundTrackingService:
                         if instrument not in instruments:
                             logger.info(f"Found instrument {instrument.name} (ID: {instrument.id}) with tag {tag.tag_id}")
                             instruments.append(instrument)
+                        else:
+                            logger.debug(f"Instrument {instrument.name} (ID: {instrument.id}) already in list")
+                    else:
+                        logger.debug(f"Tag {tag.tag_id} has no related instrument")
                 except Exception as e:
                     logger.warning(f"Error checking for instrument with tag {tag.tag_id}: {str(e)}")
                 
                 # Check for related trays (ForeignKey from Tray to RFIDTag)
                 # Tray has a ForeignKey to RFIDTag with no custom related_name
                 related_trays = Tray.objects.filter(tag=tag)
-                for tray in related_trays:
-                    if tray not in trays:
-                        logger.info(f"Found tray {tray.name} (ID: {tray.id}) with tag {tag.tag_id}")
-                        trays.append(tray)
-                        
-                # Log warning if no instrument or tray is associated with this tag
-                if not hasattr(tag, 'tag') and not related_trays.exists():
-                    logger.warning(f"Tag {tag.tag_id} has no linked instrument or tray")
-                    
+                if related_trays.exists():
+                    logger.info(f"Found {related_trays.count()} trays for tag {tag.tag_id}")
+                    for tray in related_trays:
+                        if tray not in trays:
+                            logger.info(f"Found tray {tray.name} (ID: {tray.id}) with tag {tag.tag_id}")
+                            trays.append(tray)
+                        else:
+                            logger.debug(f"Tray {tray.name} (ID: {tray.id}) already in list")
+                else:
+                    logger.debug(f"Tag {tag.tag_id} has no related trays")
             except RFIDTag.DoesNotExist:
                 logger.warning(f"RFID tag with EPC {epc} not found in database")
         
@@ -236,93 +287,108 @@ class OutboundTrackingService:
         Identify which found items were used in the operation and remain in the room.
         Also identify extra items that weren't used in the operation but are in the room.
         
-        In outbound tracking, all items found in the room (both those used in the operation
-        and any extras) are considered "remaining" and need to be removed.
-        
         Args:
             found_instruments: List of instruments found in the room
             found_trays: List of trays found in the room
-            used_items: Dictionary of items used in the operation from verification session
+            used_items: Dictionary of items used in the operation
         """
-        # Extract used instrument and tray IDs from verification session
-        used_instrument_ids = []
-        used_tray_ids = []
+        logger.info(f"===== IDENTIFYING REMAINING ITEMS =====")
+        logger.info(f"Found instruments: {len(found_instruments)}, Found trays: {len(found_trays)}")
         
-        # Extract IDs from the used_items dictionary
-        if 'instruments' in used_items:
-            for name, data in used_items['instruments'].items():
-                if 'ids' in data:
-                    used_instrument_ids.extend(data['ids'])
+        # Reset the tracking lists for this scan
+        self.remaining_instruments = []
+        self.remaining_trays = []
+        self.extra_instruments = []
+        self.extra_trays = []
         
-        if 'trays' in used_items:
-            for name, data in used_items['trays'].items():
-                if 'ids' in data:
-                    used_tray_ids.extend(data['ids'])
+        # Also reset the tracking dictionaries - we are not cumulative
+        self.remaining_items = {"instruments": {}, "trays": {}}
+        self.extra_items = {"instruments": {}, "trays": {}}
         
-        # Create sets for faster lookups
-        used_instrument_id_set = set(used_instrument_ids)
-        used_tray_id_set = set(used_tray_ids)
-        
-        # Process all found instruments - track only by ID, not by name
-        if found_instruments:
-            # Track instruments by ID only
-            found_instruments_by_id = {instrument.id: instrument for instrument in found_instruments}
+        # Process instruments
+        logger.debug(f"Processing {len(found_instruments)} found instruments")
+        for instrument in found_instruments:
+            logger.debug(f"Checking instrument: ID={instrument.id}, Name={instrument.name}")
             
-            # Add all found instruments to the remaining list
-            self.remaining_instruments = list(found_instruments)
+            # Check if this instrument was used in the operation
+            name = instrument.name
+            instrument_used = False
             
-            # Track each instrument by its ID in the remaining_items_dict
-            for instrument in found_instruments:
-                instrument_id = instrument.id
-                was_used = instrument_id in used_instrument_id_set
+            # Check in used_items dict
+            if 'instruments' in used_items and name in used_items['instruments']:
+                instrument_used = True
+                logger.debug(f"Instrument {name} was used in operation")
                 
-                # Add as an individual entry in the remaining_items_dict
-                self.remaining_items_dict['instruments'][instrument_id] = {
-                    'name': instrument.name,
-                    'id': instrument_id,
-                    'was_used': was_used  # Track if it was used in operation
-                }
+                # Add to remaining items (those that were used but still in room)
+                self.remaining_instruments.append(instrument)
                 
-                # Also track extra items separately for reference (not used in operation but found)
-                if not was_used:
-                    self.extra_instruments.append(instrument)
-                    
-                    # Add as individual entry in extra_items_dict
-                    self.extra_items_dict['instruments'][instrument_id] = {
-                        'name': instrument.name,
-                        'id': instrument_id
-                    }
+                # Add to remaining_items dict
+                if name not in self.remaining_items["instruments"]:
+                    self.remaining_items["instruments"][name] = {"quantity": 0, "ids": []}
+                
+                # Track this specific instrument
+                self.remaining_items["instruments"][name]["ids"].append(instrument.id)
+                self.remaining_items["instruments"][name]["quantity"] = len(self.remaining_items["instruments"][name]["ids"])
+            else:
+                # If not used in the operation, it's extra
+                logger.debug(f"Instrument {name} was NOT used in operation - marking as EXTRA")
+                self.extra_instruments.append(instrument)
+                
+                # Add to extra_items tracking
+                if name not in self.extra_items["instruments"]:
+                    self.extra_items["instruments"][name] = {"quantity": 0, "ids": []}
+                
+                # Track this specific instrument
+                self.extra_items["instruments"][name]["ids"].append(instrument.id)
+                self.extra_items["instruments"][name]["quantity"] = len(self.extra_items["instruments"][name]["ids"])
         
-        # Process all found trays - track only by ID, not by name
-        if found_trays:
-            # Track trays by ID only
-            found_trays_by_id = {tray.id: tray for tray in found_trays}
+        # Process trays
+        logger.debug(f"Processing {len(found_trays)} found trays")
+        for tray in found_trays:
+            logger.debug(f"Checking tray: ID={tray.id}, Name={tray.name}")
             
-            # Add all found trays to the remaining list
-            self.remaining_trays = list(found_trays)
+            # Check if this tray was used in the operation
+            name = tray.name
+            tray_used = False
             
-            # Track each tray by its ID in the remaining_items_dict
-            for tray in found_trays:
-                tray_id = tray.id
-                was_used = tray_id in used_tray_id_set
+            # Check in used_items dict
+            if 'trays' in used_items and name in used_items['trays']:
+                tray_used = True
+                logger.debug(f"Tray {name} was used in operation")
                 
-                # Add as an individual entry in the remaining_items_dict
-                self.remaining_items_dict['trays'][tray_id] = {
-                    'name': tray.name,
-                    'id': tray_id,
-                    'was_used': was_used  # Track if it was used in operation
-                }
+                # Add to remaining items (those that were used but still in room)
+                self.remaining_trays.append(tray)
                 
-                # Also track extra items separately for reference (not used in operation but found)
-                if not was_used:
-                    self.extra_trays.append(tray)
-                    
-                    # Add as individual entry in extra_items_dict
-                    self.extra_items_dict['trays'][tray_id] = {
-                        'name': tray.name,
-                        'id': tray_id
-                    }
-    
+                # Add to remaining_items dict
+                if name not in self.remaining_items["trays"]:
+                    self.remaining_items["trays"][name] = {"quantity": 0, "ids": []}
+                
+                # Track this specific tray
+                self.remaining_items["trays"][name]["ids"].append(tray.id)
+                self.remaining_items["trays"][name]["quantity"] = len(self.remaining_items["trays"][name]["ids"])
+            else:
+                # If not used in the operation, it's extra
+                logger.debug(f"Tray {name} was NOT used in operation - marking as EXTRA")
+                self.extra_trays.append(tray)
+                
+                # Add to extra_items tracking
+                if name not in self.extra_items["trays"]:
+                    self.extra_items["trays"][name] = {"quantity": 0, "ids": []}
+                
+                # Track this specific tray
+                self.extra_items["trays"][name]["ids"].append(tray.id)
+                self.extra_items["trays"][name]["quantity"] = len(self.extra_items["trays"][name]["ids"])
+        
+        # Log the final counts
+        logger.info(f"Identified {len(self.remaining_instruments)} remaining instruments")
+        logger.info(f"Identified {len(self.remaining_trays)} remaining trays")
+        logger.info(f"Identified {len(self.extra_instruments)} extra instruments")
+        logger.info(f"Identified {len(self.extra_trays)} extra trays")
+        
+        # Debug the dictionaries to ensure they're being populated correctly
+        logger.debug(f"Remaining items dict: {self.remaining_items}")
+        logger.debug(f"Extra items dict: {self.extra_items}")
+
     def _get_or_create_outbound_tracking(self):
         """
         Get the most recent outbound tracking record for this operation session,
@@ -380,32 +446,54 @@ class OutboundTrackingService:
         If the room is empty (no remaining items), the operation session state is 
         automatically updated to 'outbound_cleared'.
         """
+        logger.info("===== UPDATING OPERATION SESSION WITH ROOM STATUS =====")
+        
+        # Log all the remaining items for debugging
+        logger.debug("Detailed remaining instruments list:")
+        for i, instrument in enumerate(self.remaining_instruments):
+            logger.debug(f"  Remaining instrument {i+1}: ID={instrument.id}, Name={instrument.name}")
+            
+        logger.debug("Detailed remaining trays list:")
+        for i, tray in enumerate(self.remaining_trays):
+            logger.debug(f"  Remaining tray {i+1}: ID={tray.id}, Name={tray.name}")
+            
         # Check if any items remain in the room
         is_room_empty = (
             len(self.remaining_instruments) == 0 and 
             len(self.remaining_trays) == 0
         )
         
-        logger.debug(f"Room empty status: {is_room_empty}")
-        logger.debug(f"Remaining instruments: {len(self.remaining_instruments)}")
-        logger.debug(f"Remaining trays: {len(self.remaining_trays)}")
+        logger.info(f"ROOM CLEARED STATUS: {is_room_empty}")
+        logger.info(f"Remaining instruments: {len(self.remaining_instruments)}")
+        logger.info(f"Remaining trays: {len(self.remaining_trays)}")
+        
+        # Log the remaining_items dictionary content for debugging
+        logger.debug(f"Remaining items dict: {self.remaining_items}")
+        logger.debug(f"Extra items dict: {self.extra_items}")
         
         # Update the outbound tracking record
         # We already have the record from __init__, just update it
         self.outbound_check.room_cleared = is_room_empty
-        self.outbound_check.remaining_items = self.remaining_items_dict
-        self.outbound_check.extra_items = self.extra_items_dict
+        self.outbound_check.remaining_items = self.remaining_items
+        self.outbound_check.extra_items = self.extra_items
         self.outbound_check.check_time = timezone.now()  # Update check time to now
+        
+        # Log the state before saving
+        logger.debug(f"Saving outbound check record: ID={self.outbound_check.id}, room_cleared={is_room_empty}")
         self.outbound_check.save()
         
-        # Update operation session state if room is empty
+        # Always update operation session state based on room status
+        old_state = self.operation_session.state
         if is_room_empty:
-            # Only update state if it's not already in a terminal state
-            valid_states_for_transition = ['completed', 'verified']
-            if self.operation_session.state in valid_states_for_transition:
-                logger.info(f"Setting operation session {self.operation_session.id} to 'outbound_cleared' state")
-                self.operation_session.state = 'outbound_cleared'
-                self.operation_session.save(update_fields=['state', 'updated_at'])
+            logger.info(f"Setting operation session {self.operation_session.id} to 'outbound_cleared' state (was '{old_state}')")
+            self.operation_session.state = 'outbound_cleared'
+        else:
+            logger.info(f"Room not cleared, setting operation session {self.operation_session.id} to 'verified' state (was '{old_state}')")
+            self.operation_session.state = 'verified'
+        
+        # Always save the state change
+        logger.debug(f"Saving operation session: ID={self.operation_session.id}, new state={self.operation_session.state}")
+        self.operation_session.save(update_fields=['state'])
         
         # Record has already been stored as self.outbound_check
     
@@ -425,21 +513,42 @@ class OutboundTrackingService:
             # Try to get used items from verification session
             try:
                 verification_session = self.operation_session.verificationsession
-                if hasattr(verification_session, 'used_items') and verification_session.used_items:
-                    used_items = verification_session.used_items
+                if hasattr(verification_session, 'used_items_dict') and verification_session.used_items_dict:
+                    used_items = verification_session.used_items_dict
                     logger.info(f"Found used items from verification session: {len(used_items.get('instruments', {})) + len(used_items.get('trays', {}))} items")
                 else:
                     logger.info("No used items found in verification session")
             except Exception as e:
                 logger.warning(f"Error getting used items from verification session: {str(e)}")
         
+        # Calculate current presence status for remaining and extra items
+        current_time = timezone.now().isoformat()
+        processed_remaining_items = self.outbound_check.remaining_items.copy() if self.outbound_check.remaining_items else {"instruments": {}, "trays": {}}
+        processed_extra_items = self.outbound_check.extra_items.copy() if self.outbound_check.extra_items else {"instruments": {}, "trays": {}}
+        
+        # Add presence status to all items
+        for item_dict in [processed_remaining_items, processed_extra_items]:
+            for item_type in ['instruments', 'trays']:
+                if item_type in item_dict:
+                    for item_id, item_data in item_dict[item_type].items():
+                        # Mark if item is currently present or not
+                        if 'last_seen' not in item_data:
+                            item_data['currently_present'] = True
+                        else:
+                            item_data['currently_present'] = False
+        
         return {
             "operation_session_id": self.operation_session.id,
             "outbound_check_id": self.outbound_check.id,
             "room_cleared": self.outbound_check.room_cleared,
             "check_time": self.outbound_check.check_time,
-            "remaining_items": self.outbound_check.remaining_items,
-            "extra_items": self.outbound_check.extra_items,
+            "remaining_items": processed_remaining_items,
+            "extra_items": processed_extra_items,
             "used_items": used_items,  # Include the used items from verification
             "scan_time": self.last_scan_time,
+            "scan_history": {
+                "timestamp": current_time,
+                "found_instrument_count": len(self.remaining_instruments) + len(self.extra_instruments),
+                "found_tray_count": len(self.remaining_trays) + len(self.extra_trays)
+            }
         }
