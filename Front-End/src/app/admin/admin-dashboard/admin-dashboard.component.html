@@ -46,6 +46,16 @@
         </div>
       </div>
     </div>
+    
+    <div class="option-card" (click)="navigateToPanel('logs')">
+      <h2><i class="fas fa-clipboard-list"></i> System Logs</h2>
+      <div class="option-content">
+        <p>View verification logs, outbound tracking logs, and system activity</p>
+        <div class="card-footer">
+          <span class="action-hint">View logs <i class="fas fa-arrow-right"></i></span>
+        </div>
+      </div>
+    </div>
   </div>
   
   <!-- User Approval Panel -->
@@ -379,6 +389,97 @@
         </div>
       </div>
     </div>
+    </div>
+  </div>
+
+  <!-- System Logs Panel -->
+  <div class="panel-container" *ngIf="showLogs">
+    <div class="panel-header">
+      <button class="back-btn" (click)="backToMainMenu()"><i class="fas fa-arrow-left"></i> Back</button>
+      <h2><i class="fas fa-clipboard-list"></i> System Logs</h2>
+    </div>
+    
+    <div class="logs-container">
+      <div class="tabs">
+        <button class="tab-btn active" (click)="selectLogType('verification')">Verification Logs</button>
+        <button class="tab-btn" (click)="selectLogType('outbound')">Outbound Logs</button>
+        <button class="tab-btn" (click)="selectLogType('system')">System Activity</button>
+      </div>
+      
+      <div class="log-filters">
+        <div class="filter-group">
+          <label>Date Range:</label>
+          <select>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+            <option value="custom">Custom Range</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Filter:</label>
+          <input type="text" placeholder="Search logs...">
+        </div>
+      </div>
+      
+      <div class="log-table-container">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Details</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2025-07-07 02:45:12</td>
+              <td>dr.smith</td>
+              <td>Instrument Verification</td>
+              <td>Surgery #1245 - Hip Replacement</td>
+              <td><span class="status-complete">Complete</span></td>
+            </tr>
+            <tr>
+              <td>2025-07-07 02:30:05</td>
+              <td>nurse.jones</td>
+              <td>Equipment Check-out</td>
+              <td>Cardiac Monitor #CM-2234</td>
+              <td><span class="status-complete">Complete</span></td>
+            </tr>
+            <tr>
+              <td>2025-07-07 02:15:33</td>
+              <td>tech.williams</td>
+              <td>Maintenance</td>
+              <td>Scheduled service - Ventilator #V-9872</td>
+              <td><span class="status-pending">Pending</span></td>
+            </tr>
+            <tr>
+              <td>2025-07-07 01:55:18</td>
+              <td>dr.johnson</td>
+              <td>Tray Verification</td>
+              <td>Surgery #1244 - Appendectomy</td>
+              <td><span class="status-issue">Missing Items</span></td>
+            </tr>
+            <tr>
+              <td>2025-07-07 01:42:09</td>
+              <td>nurse.thompson</td>
+              <td>Equipment Return</td>
+              <td>Infusion Pump #IP-4421</td>
+              <td><span class="status-complete">Complete</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pagination">
+        <button disabled><i class="fas fa-chevron-left"></i></button>
+        <span>Page 1 of 5</span>
+        <button><i class="fas fa-chevron-right"></i></button>
+      </div>
     </div>
   </div>
 </div>

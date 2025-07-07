@@ -79,40 +79,6 @@
         <p class="scan-info">Scan duration: 3 seconds</p>
       </div>
 
-      <!-- Scan complete - Room cleared -->
-      <div *ngIf="scanComplete && roomCleared" class="scan-result cleared">
-        <div class="result-icon">
-          <i class="fas fa-check-circle"></i>
-        </div>
-        <h3>Room Cleared</h3>
-        <p>No instruments or equipment were found remaining in the operating room.</p>
-        <p *ngIf="lastScanTimestamp" class="scan-timestamp">Last scan: {{lastScanTimestamp | date:'medium'}}</p>
-        
-        <!-- Used items display -->
-        <div *ngIf="usedItems && usedItems.length > 0" class="used-items-section">
-          <h4>Used Items</h4>
-          <p>The following items were used during the procedure:</p>
-          <div class="used-items">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Type</th>
-                  <th>ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of usedItems">
-                  <td>{{item.name}}</td>
-                  <td>{{item.type | titlecase}}</td>
-                  <td>{{item.id || item.unique_id || 'N/A'}}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <!-- Scan complete - Items remaining -->
       <div *ngIf="scanComplete && !roomCleared" class="scan-result not-cleared">
         <div class="result-icon">
