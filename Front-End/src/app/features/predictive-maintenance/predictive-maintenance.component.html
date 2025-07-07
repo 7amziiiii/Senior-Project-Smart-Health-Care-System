@@ -16,6 +16,18 @@
 
   <!-- Page content -->
   <div class="content-container">
+    <div class="dashboard-header">
+      <h2>Predictive Equipment Maintenance</h2>
+      <div class="action-bar">
+        <button class="btn-primary refresh-btn" (click)="refreshPredictions()">
+          <i class="fas fa-sync-alt"></i> Refresh Predictions
+        </button>
+        <span class="ml-status" [class.ml-active]="mlApiAvailable">
+          <i class="fas fa-brain"></i> ML Service: {{ mlApiAvailable ? 'Active' : 'Unavailable' }}
+        </span>
+      </div>
+    </div>
+    
     <div class="dashboard-summary">
       <div class="summary-card maintenance-required">
         <div class="card-icon">
@@ -23,7 +35,7 @@
         </div>
         <div class="card-content">
           <h3>Need Maintenance</h3>
-          <div class="card-value">2</div>
+          <div class="card-value">{{ needMaintenanceCount }}</div>
         </div>
       </div>
 
@@ -33,7 +45,7 @@
         </div>
         <div class="card-content">
           <h3>Good Condition</h3>
-          <div class="card-value">4</div>
+          <div class="card-value">{{ goodConditionCount }}</div>
         </div>
       </div>
 
@@ -43,7 +55,7 @@
         </div>
         <div class="card-content">
           <h3>Total Equipment</h3>
-          <div class="card-value">6</div>
+          <div class="card-value">{{ totalEquipmentCount }}</div>
         </div>
       </div>
     </div>
@@ -56,56 +68,52 @@
       </div>
       <div class="equipment-list">
         <!-- Equipment Item 1 -->
-        <div class="equipment-item needs-maintenance">
+        <div class="equipment-item" *ngFor="let equipment of equipmentList | slice:0:2" [class.needs-maintenance]="equipment.needsMaintenance">
           <div class="item-header">
-            <h3>Ventilator #A2234</h3>
-            <div class="maintenance-badge">Maintenance Required</div>
+            <h3>{{ equipment.name }}</h3>
+            <div class="maintenance-badge" [class.good]="!equipment.needsMaintenance">
+              {{ equipment.needsMaintenance ? 'Maintenance Required' : 'No Maintenance Needed' }}
+            </div>
           </div>
           <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Respiratory</span>
+            <div class="detail-grid">
+              <div class="detail-group">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{ equipment.type }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Location:</span>
+                <span class="detail-value">{{ equipment.location }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Last Service:</span>
+                <span class="detail-value">{{ equipment.lastService }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Equipment ID:</span>
+                <span class="detail-value">{{ equipment.equipmentId }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Days Since Service:</span>
+                <span class="detail-value">{{ equipment.daysSinceMaintenance }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Total Usage Hours:</span>
+                <span class="detail-value">{{ equipment.totalUsageHours }}</span>
+              </div>
             </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">OR Room 3</span>
+            
+            <div class="prediction-details" *ngIf="equipment.confidence !== undefined">
+              <div class="confidence-meter">
+                <div class="confidence-label">Maintenance Prediction Confidence</div>
+                <div class="meter-container">
+                  <div class="meter-fill" [style.width.%]="equipment.confidence * 100"></div>
+                  <span class="confidence-value">{{ (equipment.confidence * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
             </div>
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">Jan 15, 2025</span>
-            </div>
-            <div class="action-buttons">
-              <button class="btn-primary">
-                <i class="fas fa-calendar-check"></i> Schedule Service
-              </button>
-            </div>
-          </div>
-        </div>
+            
 
-        <!-- Equipment Item 2 -->
-        <div class="equipment-item needs-maintenance">
-          <div class="item-header">
-            <h3>X-Ray Machine</h3>
-            <div class="maintenance-badge">Maintenance Required</div>
-          </div>
-          <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Imaging</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">Radiology Department</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">Dec 10, 2024</span>
-            </div>
-            <div class="action-buttons">
-              <button class="btn-primary">
-                <i class="fas fa-calendar-check"></i> Schedule Service
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -117,87 +125,52 @@
         <h2>Equipment in Good Condition</h2>
       </div>
       <div class="equipment-list">
-        <!-- Equipment Item 3 -->
-        <div class="equipment-item">
+        <div class="equipment-item" *ngFor="let equipment of equipmentList | slice:2:6" [class.needs-maintenance]="equipment.needsMaintenance">
           <div class="item-header">
-            <h3>ECG Monitor</h3>
-            <div class="maintenance-badge good">No Maintenance Needed</div>
+            <h3>{{ equipment.name }}</h3>
+            <div class="maintenance-badge" [class.good]="!equipment.needsMaintenance">
+              {{ equipment.needsMaintenance ? 'Maintenance Required' : 'No Maintenance Needed' }}
+            </div>
           </div>
           <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Cardiac</span>
+            <div class="detail-grid">
+              <div class="detail-group">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{ equipment.type }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Location:</span>
+                <span class="detail-value">{{ equipment.location }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Last Service:</span>
+                <span class="detail-value">{{ equipment.lastService }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Equipment ID:</span>
+                <span class="detail-value">{{ equipment.equipmentId }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Days Since Service:</span>
+                <span class="detail-value">{{ equipment.daysSinceMaintenance }}</span>
+              </div>
+              <div class="detail-group">
+                <span class="detail-label">Total Usage Hours:</span>
+                <span class="detail-value">{{ equipment.totalUsageHours }}</span>
+              </div>
             </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">ICU</span>
+            
+            <div class="prediction-details" *ngIf="equipment.confidence !== undefined">
+              <div class="confidence-meter">
+                <div class="confidence-label">Maintenance Prediction Confidence</div>
+                <div class="meter-container">
+                  <div class="meter-fill" [style.width.%]="equipment.confidence * 100"></div>
+                  <span class="confidence-value">{{ (equipment.confidence * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
             </div>
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">May 8, 2025</span>
-            </div>
-          </div>
-        </div>
+            
 
-        <!-- Equipment Item 4 -->
-        <div class="equipment-item">
-          <div class="item-header">
-            <h3>Anesthesia Machine</h3>
-            <div class="maintenance-badge good">No Maintenance Needed</div>
-          </div>
-          <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Anesthesiology</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">OR Room 2</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">Apr 20, 2025</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Equipment Item 5 -->
-        <div class="equipment-item">
-          <div class="item-header">
-            <h3>MRI Scanner</h3>
-            <div class="maintenance-badge good">No Maintenance Needed</div>
-          </div>
-          <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Imaging</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">Radiology Department</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Last Service:</span>
-              <span class="detail-value">May 15, 2025</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Equipment Item 6 -->
-        <div class="equipment-item">
-          <div class="item-header">
-            <h3>Surgical Robot</h3>
-            <div class="maintenance-badge good">No Maintenance Needed</div>
-          </div>
-          <div class="item-details">
-            <div class="detail-group">
-              <span class="detail-label">Type:</span>
-              <span class="detail-value">Robotics</span>
-            </div>
-            <div class="detail-group">
-              <span class="detail-label">Location:</span>
-              <span class="detail-value">OR Room 1</span>
-            </div>
             <div class="detail-group">
               <span class="detail-label">Last Service:</span>
               <span class="detail-value">Mar 28, 2025</span>

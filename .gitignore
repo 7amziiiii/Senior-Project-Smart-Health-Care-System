@@ -30,6 +30,8 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
+/.angular/
+# Legacy entry - keeping for backward compatibility
 /.angular/cache
 .sass-cache/
 /connect.lock

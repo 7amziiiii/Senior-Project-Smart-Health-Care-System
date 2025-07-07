@@ -25,6 +25,7 @@ export class AdminDashboardComponent implements OnInit {
   showApprovalPanel = false;
   showDashboard = false;
   showInstruments = false;
+  showLogs = false;
   
   // Registration panel properties
   showInstrumentReg = false;
@@ -151,6 +152,9 @@ export class AdminDashboardComponent implements OnInit {
   // Tray registration properties
   newTrayType = '';
   
+  // Logs properties
+  activeLogType = 'verification';
+  
   // Available instrument types
   instrumentTypes = [
     { id: 'scalpel', name: 'Scalpel' },
@@ -197,6 +201,7 @@ export class AdminDashboardComponent implements OnInit {
     this.showApprovalPanel = false;
     this.showDashboard = false;
     this.showInstruments = false;
+    this.showLogs = false;
     
     switch(panel) {
       case 'approval':
@@ -216,6 +221,13 @@ export class AdminDashboardComponent implements OnInit {
         break;
       case 'instruments':
         this.showInstruments = true;
+        break;
+      case 'equipment-requests':
+        // Show instruments panel for equipment requests
+        this.showInstruments = true;
+        break;
+      case 'logs':
+        this.showLogs = true;
         break;
     }
   }
@@ -478,6 +490,13 @@ export class AdminDashboardComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+  
+  // Logs panel methods
+  selectLogType(logType: 'verification' | 'outbound' | 'system'): void {
+    this.activeLogType = logType;
+    // In a real implementation, this would fetch the selected log type from the backend
+    console.log(`Selected log type: ${logType}`);
   }
 
 }
