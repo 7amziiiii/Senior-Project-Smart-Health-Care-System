@@ -1,0 +1,3 @@
+@echo off
+echo Starting ML Predictive Maintenance API Service...
+"C:\Users\Super Games\AppData\Local\Programs\Python\Python313\python.exe" -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
