@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class VerificationViewSet(viewsets.ViewSet):
     # Apply specific permission classes for doctor/nurse roles and admin
-    permission_classes = [IsAdmin, IsDoctorOrNurse]
+    permission_classes = [IsAdmin | IsDoctorOrNurse]
     """
     API endpoints for verification operations.
     """

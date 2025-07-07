@@ -25,7 +25,7 @@ from or_managements.models import (
     Tray,
     RFID_Reader
 )
-from or_managements.scripts.rfid_scanner import scan_rfid_tags
+from or_managements.scripts.test import scan_rfid_tags
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +55,18 @@ class VerificationService:
             }
         )
         
-        # Track items by category with name-based dictionaries
-        self.used_items_dict = {"instruments": {}, "trays": {}}
-        self.missing_items_dict = {"instruments": {}, "trays": {}}
-        self.extra_items_dict = {"instruments": {}, "trays": {}}
-        self.available_items_dict = {"instruments": {}, "trays": {}}
+        # Load existing data from verification session
+        self.used_items_dict = self.verification_session.used_items_dict or {"instruments": {}, "trays": {}}
+        self.missing_items_dict = self.verification_session.missing_items_dict or {"instruments": {}, "trays": {}}
+        self.extra_items_dict = self.verification_session.extra_items_dict or {"instruments": {}, "trays": {}}
+        self.available_items_dict = self.verification_session.available_items_dict or {"instruments": {}, "trays": {}}
+        
+        # Ensure proper structure of dictionaries
+        for dict_type in [self.used_items_dict, self.missing_items_dict, self.extra_items_dict, self.available_items_dict]:
+            if "instruments" not in dict_type:
+                dict_type["instruments"] = {}
+            if "trays" not in dict_type:
+                dict_type["trays"] = {}
     
     def perform_verification(self, scan_duration=5):
         """
@@ -71,12 +78,6 @@ class VerificationService:
         Returns:
             Dict containing verification results
         """
-        # Reset dictionaries for a fresh verification cycle
-        self.used_items_dict = {"instruments": {}, "trays": {}}
-        self.missing_items_dict = {"instruments": {}, "trays": {}}
-        self.extra_items_dict = {"instruments": {}, "trays": {}}
-        self.available_items_dict = {"instruments": {}, "trays": {}}
-        
         # Get required instruments and trays by name
         required_instrument_names, required_tray_names = self._get_required_items()
         
@@ -86,7 +87,7 @@ class VerificationService:
         # Map EPCs to database objects
         found_instruments, found_trays = self._map_epcs_to_objects(scan_results)
         
-        # Categorize items
+        # Categorize items cumulatively - keeping previously found items
         self._categorize_items(
             found_instruments, 
             found_trays, 
@@ -297,146 +298,210 @@ class VerificationService:
             required_instrument_names: Dict mapping required instrument names to quantities
             required_tray_names: Dict mapping required tray names to quantities
         """
-        # Group found instruments by name
+        # Create dictionary of found instruments by name
         found_instruments_by_name = {}
         for instrument in found_instruments:
-            if instrument.name not in found_instruments_by_name:
-                found_instruments_by_name[instrument.name] = []
-            found_instruments_by_name[instrument.name].append(instrument)
+            name = instrument.name
+            if name not in found_instruments_by_name:
+                found_instruments_by_name[name] = []
+            found_instruments_by_name[name].append(instrument)
         
-        # Group found trays by name
+        # Create dictionary of found trays by name
         found_trays_by_name = {}
         for tray in found_trays:
-            if tray.name not in found_trays_by_name:
-                found_trays_by_name[tray.name] = []
-            found_trays_by_name[tray.name].append(tray)
+            name = tray.name
+            if name not in found_trays_by_name:
+                found_trays_by_name[name] = []
+            found_trays_by_name[name].append(tray)
         
-        # Process required instruments
-        for name, required_qty in required_instrument_names.items():
-            # Get found instruments with this name
-            found_with_name = found_instruments_by_name.get(name, [])
-            found_qty = len(found_with_name)
+        # Get IDs of instruments just found in this scan for status updates
+        current_scan_instrument_ids = {instrument.id for instrument in found_instruments}
+        current_scan_tray_ids = {tray.id for tray in found_trays}
             
-            # How many are used (in room/found) vs missing
-            used_qty = min(found_qty, required_qty)
-            missing_qty = max(0, required_qty - found_qty)
-            
-            # Add to used items
-            if used_qty > 0:
-                # Take the first 'used_qty' instruments as used
-                used_instruments = found_with_name[:used_qty]
-                
-                # Add to used_items_dict with IDs for tracking
-                self.used_items_dict["instruments"][name] = {
-                    "quantity": used_qty,
-                    "ids": [i.id for i in used_instruments]
-                }
-            
-            # Add to missing items
-            if missing_qty > 0:
-                # Query for instruments with this name that aren't in the room
-                available_instruments = Instrument.objects.filter(
-                    name=name, 
-                    status="available"
-                ).exclude(id__in=[i.id for i in found_instruments])
-                
-                # Store in missing_items_dict
-                self.missing_items_dict["instruments"][name] = {
-                    "quantity": missing_qty,
-                    "available_ids": [i.id for i in available_instruments[:missing_qty]]
-                }
-                
-                # Add available instruments (not in room but could be used) to available_items_dict
-                if available_instruments:
-                    self.available_items_dict["instruments"][name] = {
-                        "quantity": min(missing_qty, len(available_instruments)),
-                        "ids": [i.id for i in available_instruments[:missing_qty]]
-                    }
-                
-                # Add available instruments (not in room but could be used) to available_items_dict
-                if available_instruments:
-                    self.available_items_dict["instruments"][name] = {
-                        "quantity": min(missing_qty, len(available_instruments)),
-                        "ids": [i.id for i in available_instruments[:missing_qty]]
-                    }
-            
-            # Handle extra instruments with this name (beyond required quantity)
-            if found_qty > required_qty:
-                extra_instruments = found_with_name[required_qty:]
-                
-                # Add to extra_items_dict
-                self.extra_items_dict["instruments"][name] = {
-                    "quantity": found_qty - required_qty,
-                    "ids": [i.id for i in extra_instruments]
-                }
+        # Temporary sets to track which items have been processed in this scan
+        processed_instrument_names = set()
+        processed_tray_names = set()
         
-        # Process any found instruments that aren't in the required list at all
+        # Categorize instruments
+        for name, required_quantity in required_instrument_names.items():
+            found_quantity = len(found_instruments_by_name.get(name, []))
+            
+            # Add to processed set
+            processed_instrument_names.add(name)
+            
+            # If already tracked in used_items, update quantities and maintain previous ids
+            if name in self.used_items_dict["instruments"]:
+                previous_ids = self.used_items_dict["instruments"][name].get("ids", [])
+                current_ids = [i.id for i in found_instruments_by_name.get(name, [])]
+                
+                # Combine previous IDs with currently found IDs
+                combined_ids = list(set(previous_ids) | set(current_ids))
+                combined_quantity = len(combined_ids)
+                
+                # If we have enough or excess, they're used items
+                if combined_quantity >= required_quantity:
+                    self.used_items_dict["instruments"][name] = {
+                        "quantity": min(combined_quantity, required_quantity),  # Only count up to required
+                        "ids": combined_ids[:required_quantity]  # Only include the required quantity
+                    }
+                    
+                    # If we found more than needed, put extras in available
+                    if combined_quantity > required_quantity:
+                        excess_ids = combined_ids[required_quantity:]
+                        if name not in self.available_items_dict["instruments"]:
+                            self.available_items_dict["instruments"][name] = {"quantity": 0, "ids": []}
+                        self.available_items_dict["instruments"][name] = {
+                            "quantity": len(excess_ids),
+                            "ids": excess_ids
+                        }
+                        
+                    # Remove from missing if previously there
+                    if name in self.missing_items_dict["instruments"]:
+                        del self.missing_items_dict["instruments"][name]
+                else:
+                    # Still missing some, update with what we have found
+                    self.used_items_dict["instruments"][name] = {
+                        "quantity": combined_quantity,
+                        "ids": combined_ids
+                    }
+                    # Still missing some quantity
+                    self.missing_items_dict["instruments"][name] = {
+                        "quantity": required_quantity - combined_quantity,
+                        "ids": []
+                    }
+            else:
+                # Not previously tracked, handle as new
+                if found_quantity > 0:
+                    # Mark as used up to the required quantity
+                    used_quantity = min(found_quantity, required_quantity)
+                    used_instruments = found_instruments_by_name[name][:used_quantity]
+                    
+                    self.used_items_dict["instruments"][name] = {
+                        "quantity": used_quantity,
+                        "ids": [instrument.id for instrument in used_instruments]
+                    }
+                    
+                    # If excess, mark as available
+                    if found_quantity > required_quantity:
+                        available_quantity = found_quantity - required_quantity
+                        available_instruments = found_instruments_by_name[name][required_quantity:]
+                        
+                        self.available_items_dict["instruments"][name] = {
+                            "quantity": available_quantity,
+                            "ids": [instrument.id for instrument in available_instruments]
+                        }
+                        
+                    # If some still missing, track quantity needed
+                    if found_quantity < required_quantity:
+                        self.missing_items_dict["instruments"][name] = {
+                            "quantity": required_quantity - found_quantity,
+                            "ids": []
+                        }
+                else:
+                    # Not found any, mark as missing
+                    self.missing_items_dict["instruments"][name] = {
+                        "quantity": required_quantity,
+                        "ids": []
+                    }
+        
+        # Categorize trays - similar logic as instruments
+        for name, required_quantity in required_tray_names.items():
+            found_quantity = len(found_trays_by_name.get(name, []))
+            
+            # Add to processed set
+            processed_tray_names.add(name)
+            
+            # If already tracked in used_items, update quantities and maintain previous ids
+            if name in self.used_items_dict["trays"]:
+                previous_ids = self.used_items_dict["trays"][name].get("ids", [])
+                current_ids = [t.id for t in found_trays_by_name.get(name, [])]
+                
+                # Combine previous IDs with currently found IDs
+                combined_ids = list(set(previous_ids) | set(current_ids))
+                combined_quantity = len(combined_ids)
+                
+                # If we have enough or excess, they're used items
+                if combined_quantity >= required_quantity:
+                    self.used_items_dict["trays"][name] = {
+                        "quantity": min(combined_quantity, required_quantity),  # Only count up to required
+                        "ids": combined_ids[:required_quantity]  # Only include the required quantity
+                    }
+                    
+                    # If we found more than needed, put extras in available
+                    if combined_quantity > required_quantity:
+                        excess_ids = combined_ids[required_quantity:]
+                        if name not in self.available_items_dict["trays"]:
+                            self.available_items_dict["trays"][name] = {"quantity": 0, "ids": []}
+                        self.available_items_dict["trays"][name] = {
+                            "quantity": len(excess_ids),
+                            "ids": excess_ids
+                        }
+                        
+                    # Remove from missing if previously there
+                    if name in self.missing_items_dict["trays"]:
+                        del self.missing_items_dict["trays"][name]
+                else:
+                    # Still missing some, update with what we have found
+                    self.used_items_dict["trays"][name] = {
+                        "quantity": combined_quantity,
+                        "ids": combined_ids
+                    }
+                    # Still missing some quantity
+                    self.missing_items_dict["trays"][name] = {
+                        "quantity": required_quantity - combined_quantity,
+                        "ids": []
+                    }
+            else:
+                # Not previously tracked, handle as new
+                if found_quantity > 0:
+                    # Mark as used up to the required quantity
+                    used_quantity = min(found_quantity, required_quantity)
+                    used_trays = found_trays_by_name[name][:used_quantity]
+                    
+                    self.used_items_dict["trays"][name] = {
+                        "quantity": used_quantity,
+                        "ids": [tray.id for tray in used_trays]
+                    }
+                    
+                    # If excess, mark as available
+                    if found_quantity > required_quantity:
+                        available_quantity = found_quantity - required_quantity
+                        available_trays = found_trays_by_name[name][required_quantity:]
+                        
+                        self.available_items_dict["trays"][name] = {
+                            "quantity": available_quantity,
+                            "ids": [tray.id for tray in available_trays]
+                        }
+                        
+                    # If some still missing, track quantity needed
+                    if found_quantity < required_quantity:
+                        self.missing_items_dict["trays"][name] = {
+                            "quantity": required_quantity - found_quantity,
+                            "ids": []
+                        }
+                else:
+                    # Not found any, mark as missing
+                    self.missing_items_dict["trays"][name] = {
+                        "quantity": required_quantity,
+                        "ids": []
+                    }
+        
+        # Handle extra instruments (not required for operation)
         for name, instruments in found_instruments_by_name.items():
             if name not in required_instrument_names:
+                # This instrument isn't required, so it's extra
                 self.extra_items_dict["instruments"][name] = {
                     "quantity": len(instruments),
-                    "ids": [i.id for i in instruments]
-                }
-        
-        # Process required trays (same logic as instruments)
-        for name, required_qty in required_tray_names.items():
-            # Get found trays with this name
-            found_with_name = found_trays_by_name.get(name, [])
-            found_qty = len(found_with_name)
-            
-            # How many are used (in room/found) vs missing
-            used_qty = min(found_qty, required_qty)
-            missing_qty = max(0, required_qty - found_qty)
-            
-            # Add to used items
-            if used_qty > 0:
-                # Take the first 'used_qty' trays as used
-                used_trays = found_with_name[:used_qty]
-                
-                # Add to used_items_dict with IDs for tracking
-                self.used_items_dict["trays"][name] = {
-                    "quantity": used_qty,
-                    "ids": [t.id for t in used_trays]
-                }
-            
-            # Add to missing items
-            if missing_qty > 0:
-                # Query for trays with this name that aren't in the room
-                available_trays = Tray.objects.filter(
-                    name=name, 
-                    status="available"
-                ).exclude(id__in=[t.id for t in found_trays])
-                
-                # Store in missing_items_dict
-                self.missing_items_dict["trays"][name] = {
-                    "quantity": missing_qty,
-                    "available_ids": [t.id for t in available_trays[:missing_qty]]
+                    "ids": [instrument.id for instrument in instruments]
                 }
                 
-                # Add available trays (not in room but could be used) to available_items_dict
-                if available_trays:
-                    self.available_items_dict["trays"][name] = {
-                        "quantity": min(missing_qty, len(available_trays)),
-                        "ids": [t.id for t in available_trays[:missing_qty]]
-                    }
-                    # Track available trays using only dictionaries (no list tracking)
-            
-            # Handle extra trays with this name (beyond required quantity)
-            if found_qty > required_qty:
-                extra_trays = found_with_name[required_qty:]
-                
-                # Add to extra_items_dict
-                self.extra_items_dict["trays"][name] = {
-                    "quantity": found_qty - required_qty,
-                    "ids": [t.id for t in extra_trays]
-                }
-        
-        # Process any found trays that aren't in the required list at all
+        # Handle extra trays (not required for operation)
         for name, trays in found_trays_by_name.items():
             if name not in required_tray_names:
+                # This tray isn't required, so it's extra
                 self.extra_items_dict["trays"][name] = {
                     "quantity": len(trays),
-                    "ids": [t.id for t in trays]
+                    "ids": [tray.id for tray in trays]
                 }
     
     def _find_potential_replacements(self):

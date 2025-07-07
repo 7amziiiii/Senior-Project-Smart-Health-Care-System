@@ -107,7 +107,7 @@ def scan_rfid_tags(port="", baud_rate=0, duration=5, verbose=False):
         # Convert all unique tags to the required format
         for tag, timestamp in unique_tags.items():
             results["tags"].append({
-                "tag_id": tag,
+                "epc": tag,  
                 "timestamp": timestamp
             })
         
@@ -116,6 +116,17 @@ def scan_rfid_tags(port="", baud_rate=0, duration=5, verbose=False):
         
         return results
     
+    except KeyboardInterrupt:
+        if verbose:
+            print("\nScan interrupted by user")
+        # Still return any tags that were scanned before the interruption
+        for tag, timestamp in unique_tags.items():
+            results["tags"].append({
+                "epc": tag,  
+                "timestamp": timestamp
+            })
+        results["count"] = len(results["tags"])
+        return results
     except Exception as e:
         sys.stderr.write(f"Error: {str(e)}\n")
         return {"count": 0, "tags": [], "error": str(e)}
@@ -142,7 +153,7 @@ def main():
     if args.verbose:
         print(f"\nScan complete! Found {len(results['tags'])} tags:")
         for i, tag_info in enumerate(results['tags'], 1):
-            print(f"  {i}. Tag ID: {tag_info['tag_id']} (timestamp: {tag_info['timestamp']})")
+            print(f"  {i}. Tag EPC: {tag_info['epc']} (timestamp: {tag_info['timestamp']})")  
             
         # If no tags were found, provide troubleshooting guidance
         if len(results['tags']) == 0:

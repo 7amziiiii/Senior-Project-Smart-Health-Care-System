@@ -1,15 +1,10 @@
-<div class="container">
-  <!-- Header with back navigation -->
-  <div class="header">
-    <button *ngIf="selectedSurgery" class="back-button" (click)="goBack()">
-      <i class="fas fa-arrow-left"></i> Back to Surgeries
-    </button>
-    <h1 *ngIf="!selectedSurgery">Instruments Outbound Tracking</h1>
-    <h1 *ngIf="selectedSurgery">
-      {{selectedSurgery.name}} - Room {{selectedSurgery.roomNumber}}
-    </h1>
-  </div>
-
+<div>
+  <h1>Instruments Outbound Tracking</h1>
+  
+  <button *ngIf="selectedSurgery" class="back-btn" (click)="goBack()">
+    <i class="fas fa-arrow-left"></i> Back to Surgeries
+  </button>
+  
   <!-- Loading state -->
   <div *ngIf="loading" class="loading-container">
     <div class="spinner"></div>
@@ -17,132 +12,288 @@
   </div>
 
   <!-- Surgery selection screen -->
-  <div *ngIf="!loading && !selectedSurgery" class="surgeries-list">
-    <div class="list-section">
-      <h2>Ongoing Surgeries</h2>
-      <div class="no-data" *ngIf="!hasOngoingSurgeries()">
-        <p>No ongoing surgeries</p>
-      </div>
-      <ng-container *ngFor="let surgery of surgeries">
-        <div class="surgery-card" *ngIf="isSurgeryOngoing(surgery)" 
-             (click)="selectSurgery(surgery)">
-          <h3>{{surgery.name}}</h3>
-          <div class="surgery-details">
-            <p><strong>Room:</strong> {{surgery.roomNumber}}</p>
-            <p><strong>Description:</strong> {{surgery.description}}</p>
-            <p><strong>Start Time:</strong> {{surgery.scheduledTime | date:'shortTime'}}</p>
-            <span class="status in-progress">In Progress</span>
-          </div>
+  <div *ngIf="!loading && !selectedSurgery" class="surgery-selection">
+    <h3>Select a Surgery</h3>
+    <div class="surgery-list">
+      <!-- Ongoing Surgeries -->
+      <div *ngFor="let surgery of surgeries" 
+          class="surgery-card"
+          [class.ongoing]="isSurgeryOngoing(surgery)"
+          [class.completed]="isSurgeryCompleted(surgery)"
+          (click)="selectSurgery(surgery)">
+        <h4>{{surgery.name}}</h4>
+        <div class="surgery-details">
+          <p><strong>Room:</strong> {{surgery.roomNumber}}</p>
+          <p><strong>Time:</strong> {{surgery.scheduledTime | date:'shortTime'}}</p>
+          <p><strong>Status:</strong> 
+            <span [ngClass]="{'ongoing-status': isSurgeryOngoing(surgery), 'completed-status': isSurgeryCompleted(surgery)}">
+              {{isSurgeryOngoing(surgery) ? 'In Progress' : 'Completed'}}
+            </span>
+          </p>
         </div>
-      </ng-container>
-    </div>
-
-    <div class="list-section">
-      <h2>Recently Completed Surgeries</h2>
-      <div class="no-data" *ngIf="!hasCompletedSurgeries()">
-        <p>No completed surgeries</p>
       </div>
-      <ng-container *ngFor="let surgery of surgeries">
-        <div class="surgery-card" *ngIf="isSurgeryCompleted(surgery)" 
-             (click)="selectSurgery(surgery)">
-          <h3>{{surgery.name}}</h3>
-          <div class="surgery-details">
-            <p><strong>Room:</strong> {{surgery.roomNumber}}</p>
-            <p><strong>Description:</strong> {{surgery.description}}</p>
-            <p><strong>Completion Time:</strong> {{surgery.scheduledTime | date:'shortTime'}}</p>
-            <span class="status completed">Completed</span>
-          </div>
-        </div>
-      </ng-container>
+      
+      <!-- No surgeries message -->
+      <div *ngIf="surgeries.length === 0" class="no-data">
+        <p>No surgeries available</p>
+      </div>
     </div>
   </div>
 
-  <!-- Outbound tracking screen -->
-  <div *ngIf="!loading && selectedSurgery" class="outbound-tracking">
-    <div class="status-card">
-      <h2>Post-Operation Room Check</h2>
-      <p class="description">
-        Scan the operating room to ensure all instruments have been properly removed after the procedure.
-      </p>
+  <!-- Outbound tracking screen with tabs -->
+  <div *ngIf="!loading && selectedSurgery">
+    <h3>Basic Operation Type</h3>
+    <p>
+      Room: Room {{selectedSurgery.roomNumber}} - Available • {{selectedSurgery.scheduledTime | date:'MMM d, y'}} • {{selectedSurgery.scheduledTime | date:'h:mm a'}} • {{isSurgeryCompleted(selectedSurgery) ? 'Completed' : 'In Progress'}}
+    </p>
+    <p>
+      Last scan: {{lastScanTimestamp | date:'h:mm a'}}
+      <button (click)="startScan()" [disabled]="scanning" class="scan-btn">
+        Scan
+      </button>
+    </p>
 
-      <!-- Pre-scan state -->
-      <div *ngIf="!scanning && !scanComplete" class="scan-action">
-        <button class="primary-button" (click)="startScan()">
-          <i class="fas fa-search"></i> Start Room Scan
+    <!-- Loading indicator -->
+    <div *ngIf="scanning" class="loading-indicator">
+      <p><i class="fas fa-spinner fa-spin"></i> Scanning room...</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <div class="tab-navigation">
+        <button 
+          [class.active]="activeTab === 'remaining'"
+          (click)="activeTab = 'remaining'"
+          class="tab-btn">
+          <i class="fas fa-exclamation-triangle"></i>
+          Remaining Items
+          <span class="badge">{{remainingInstruments.length + remainingTrays.length}}</span>
+        </button>
+        
+        <button 
+          [class.active]="activeTab === 'leavet'"
+          (click)="activeTab = 'leavet'" 
+          class="tab-btn">
+          <i class="fas fa-check-circle"></i>
+          Retrieved Items
+          <span class="badge">{{usedItems.length - (remainingInstruments.length + remainingTrays.length)}}</span>
+        </button>
+        
+        <button 
+          [class.active]="activeTab === 'allreq'"
+          (click)="activeTab = 'allreq'" 
+          class="tab-btn">
+          <i class="fas fa-clipboard-list"></i>
+          All Required Items
+          <span class="badge">{{usedItems.length}}</span>
         </button>
       </div>
+    </div>
 
-      <!-- Scanning in progress -->
-      <div *ngIf="scanning" class="scanning-status">
-        <div class="spinner"></div>
-        <p>Scanning room for remaining instruments...</p>
-        <p class="scan-info">Scan duration: 3 seconds</p>
-      </div>
-
-      <!-- Scan complete - Items remaining -->
-      <div *ngIf="scanComplete && !roomCleared" class="scan-result not-cleared">
-        <div class="result-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <h3>Items Remaining</h3>
-        <p>The following items were detected in the operating room:</p>
-        
-        <!-- Used items display -->
-        <div *ngIf="usedItems && usedItems.length > 0" class="used-items-section">
-          <h4>Used Items</h4>
-          <p>The following items were used during the procedure:</p>
-          <div class="used-items">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Type</th>
-                  <th>ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of usedItems">
-                  <td>{{item.name}}</td>
-                  <td>{{item.type | titlecase}}</td>
-                  <td>{{item.id || item.unique_id || 'N/A'}}</td>
-                </tr>
-              </tbody>
-            </table>
+    <div class="tab-content">
+      <!-- Remaining Items Tab Content -->
+      <div *ngIf="activeTab === 'remaining'" class="tab-pane">
+        <div class="panel warning-panel" *ngIf="remainingInstruments.length + remainingTrays.length > 0">
+          <div class="warning-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Attention Required</h3>
+          </div>
+          <p>These items were used in the surgery and are still present in the operating room:</p>
+              
+          <!-- Remaining Instruments -->
+          <div class="items-table-container">
+            <h4 *ngIf="remainingInstruments.length > 0">Remaining Instruments</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of remainingInstruments">
+                    <td>{{item.name}}</td>
+                    <td>Instrument</td>
+                    <td><span class="badge badge-warning">Remaining</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Remaining Trays -->
+          <div class="items-table-container">
+            <h4 *ngIf="remainingTrays.length > 0">Remaining Trays</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of remainingTrays">
+                    <td>{{item.name}}</td>
+                    <td>Tray</td>
+                    <td><span class="badge badge-warning">Remaining</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+              
+          <!-- Extra Items Section -->
+          <div class="items-table-container">
+            <h4 *ngIf="extraInstruments.length > 0 || extraTrays.length > 0">Extra Items (Not Used in Surgery)</h4>
+            <p *ngIf="extraInstruments.length > 0 || extraTrays.length > 0">These items were not used in the surgery but are present in the room:</p>
+                
+            <!-- Extra Instruments -->
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>IDs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of extraInstruments" class="extra-row">
+                    <td>{{item.name}}</td>
+                    <td>Instrument</td>
+                    <td class="quantity-cell">{{item.quantity}}</td>
+                    <td>
+                      <span class="id-chip" *ngFor="let id of item.ids">{{id}}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Extra Trays -->
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>IDs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of extraTrays" class="extra-row">
+                    <td>{{item.name}}</td>
+                    <td>Tray</td>
+                    <td class="quantity-cell">{{item.quantity}}</td>
+                    <td>
+                      <span class="id-chip" *ngFor="let id of item.ids">{{id}}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- No items message -->
+          <div class="no-items" *ngIf="remainingInstruments.length === 0 && remainingTrays.length === 0 && extraInstruments.length === 0 && extraTrays.length === 0">
+            <i class="fas fa-check-circle success-icon"></i>
+            <p>No items remaining in the room. All items have been retrieved.</p>
           </div>
         </div>
-        
-        <div class="remaining-items">
-          <table>
+      </div>
+          
+      <!-- Retrieved Items Tab Content -->
+      <div class="tab-pane" [class.active]="activeTab === 'leavet'">
+        <div class="items-table-container">
+          <h4>Retrieved Items</h4>
+          <p>These items have been successfully retrieved from the operating room:</p>
+          <table class="items-table">
             <thead>
               <tr>
-                <th>Item</th>
+                <th>Item Name</th>
                 <th>Type</th>
-                <th>ID</th>
-                <th>Action</th>
+                <th>Quantity</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of remainingItems">
+              <tr *ngIf="(usedItems.length - (remainingInstruments.length + remainingTrays.length)) === 0" class="no-data-row">
+                <td colspan="4" class="no-data-cell">
+                  <i class="fas fa-info-circle"></i> No items have been retrieved yet
+                </td>
+              </tr>
+              <tr *ngFor="let item of usedItems" class="retrieved-row" 
+                  [hidden]="isItemRemaining(item.name, item.type)">
                 <td>{{item.name}}</td>
                 <td>{{item.type | titlecase}}</td>
-                <td>{{item.id || item.unique_id || 'N/A'}}</td>
+                <td class="quantity-cell">{{item.quantity}}</td>
                 <td>
-                  <button class="small-button">Retrieved</button>
+                  <span class="status-indicator retrieved">
+                    <i class="fas fa-check-circle"></i> Retrieved
+                  </span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p *ngIf="lastScanTimestamp" class="scan-timestamp">Last scan: {{lastScanTimestamp | date:'medium'}}</p>
-
-        <div class="actions">
-          <button class="primary-button" (click)="markComplete()">
-            Mark All Retrieved
-          </button>
-          <button class="secondary-button" (click)="startScan()">
-            Rescan Room
-          </button>
+      </div>
+          
+      <!-- All Required Items Tab Content -->
+      <div class="tab-pane" [class.active]="activeTab === 'allreq'">
+        <div class="items-table-container">
+          <h4>All Required Items</h4>
+          <p>Complete list of all items used in this surgery:</p>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Type</th>
+                <th>Quantity</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="usedItems.length === 0" class="no-data-row">
+                <td colspan="4" class="no-data-cell">
+                  <i class="fas fa-info-circle"></i> No items registered for this surgery
+                </td>
+              </tr>
+              <tr *ngFor="let item of usedItems"
+                  [ngClass]="{'remaining-row': isItemRemaining(item.name, item.type), 'retrieved-row': !isItemRemaining(item.name, item.type)}">
+                <td>{{item.name}}</td>
+                <td>{{item.type | titlecase}}</td>
+                <td class="quantity-cell">{{item.quantity}}</td>
+                <td>
+                  <span *ngIf="!isItemRemaining(item.name, item.type)" class="status-indicator retrieved">
+                    <i class="fas fa-check-circle"></i> Retrieved
+                  </span>
+                  <span *ngIf="isItemRemaining(item.name, item.type)" class="status-indicator remaining">
+                    <i class="fas fa-exclamation-circle"></i> Remaining
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Last scan timestamp and action buttons -->
+    <div class="action-footer">
+      <p class="scan-timestamp" *ngIf="lastScanTimestamp">Last scan: {{lastScanTimestamp | date:'medium'}}</p>
+      <div class="action-buttons">
+        <button class="primary-button" (click)="markComplete()" [disabled]="remainingInstruments.length === 0 && remainingTrays.length === 0">
+          Mark All Retrieved
+        </button>
+        <button class="secondary-button" (click)="startScan()" [disabled]="scanning">
+          Rescan Room
+        </button>
       </div>
     </div>
   </div>

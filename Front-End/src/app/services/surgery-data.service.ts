@@ -111,26 +111,39 @@ export class SurgeryDataService {
 
   // Load surgeries from API
   private loadSurgeries(): void {
-    // Check if authentication token exists
-    const token = localStorage.getItem('authToken');
+    // Check if authentication token exists - support multiple possible token keys
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken') || localStorage.getItem('token');
     if (!token) {
-      console.error('No authentication token found');
+      console.error('No authentication token found in localStorage');
+      console.log('Available localStorage keys:', Object.keys(localStorage));
       // Fall back to mock data since no token available
       this.fallbackToMockData();
       return;
     }
-
+    
+    // Determine token format (JWT vs Token) and set appropriate header
+    // JWT tokens are typically longer and don't need 'Token ' prefix
+    const authHeaderValue = token.length > 40 ? `Bearer ${token}` : `Token ${token}`;
+    console.log('Using authentication header:', authHeaderValue.substring(0, 15) + '...');
+    
     // Create headers with authentication token
-    const headers = new HttpHeaders().set('Authorization', `Token ${token}`);
+    const headers = new HttpHeaders().set('Authorization', authHeaderValue);
     
     // Make HTTP request to get operation sessions from backend
+    // environment.apiUrl already includes the /api prefix
     this.http.get<OperationSession[] | {results: OperationSession[]}>(
       `${environment.apiUrl}/operation-sessions/`, 
       { headers }
     ).pipe(
       catchError(error => {
-        console.error('Error fetching operation sessions:', error);
-        // Fall back to mock data if API fails
+        console.error(`API Error (${error.status || 'unknown'}):`, error.message || error);
+        console.error('Full error details:', error);
+        console.error('API URL:', `${environment.apiUrl}/api/operation-sessions/`);
+        // Only fall back to mock data if we're not in strict API mode
+        if (!this.simulationMode) {
+          // Rethrow the error to let the subscriber handle it
+          throw error;
+        }
         return this.simulateApiCall();
       })
     ).subscribe(
@@ -166,7 +179,16 @@ export class SurgeryDataService {
         this.surgeriesSubject.next(this.surgeries);
       }, 
       error => {
-        console.error('Error processing operation sessions:', error);
+        console.error(`API Error in subscriber (${error.status || 'unknown'}):`, error.message || error);
+        // Log authentication info for debugging (but don't expose tokens)
+        console.log('Auth state:', {
+          hasAuthToken: !!localStorage.getItem('authToken'),
+          hasToken: !!localStorage.getItem('token'),
+          authKeys: Object.keys(localStorage).filter(key => key.toLowerCase().includes('auth') || key.toLowerCase().includes('token'))
+        });
+        
+        // Fall back to mock data, but log a clear message
+        console.warn('USING MOCK SURGERY DATA DUE TO API ERROR');
         this.fallbackToMockData();
       }
     );

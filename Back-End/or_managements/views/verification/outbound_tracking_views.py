@@ -22,7 +22,7 @@ class OutboundTrackingViewSet(viewsets.ViewSet):
     This ViewSet follows the verification service pattern, with a single endpoint
     that always performs a scan before returning status information.
     """
-    permission_classes = [IsAdmin, IsDoctorOrNurse]
+    permission_classes = [IsAdmin | IsDoctorOrNurse]
     
     @action(detail=True, methods=['GET'], url_path='status')
     def get_status(self, request, pk=None):
@@ -57,11 +57,30 @@ class OutboundTrackingViewSet(viewsets.ViewSet):
             # Get the operation session
             try:
                 operation_session = OperationSession.objects.get(pk=pk)
+                logger.debug(f"Found operation session: {pk}")
             except OperationSession.DoesNotExist:
                 logger.warning(f"Operation session not found: {pk}")
                 return Response(
                     {"error": "Operation session not found"},
                     status=status.HTTP_404_NOT_FOUND
+                )
+                
+            # Verify that this operation session has a verification session
+            from or_managements.models.verification_session import VerificationSession
+            try:
+                verification_session = VerificationSession.objects.get(operation_session=operation_session)
+                logger.debug(f"Found verification session for operation session: {pk}")
+                if not verification_session.used_items_dict:
+                    logger.warning(f"Verification session has no used_items_dict for operation session: {pk}")
+                    return Response(
+                        {"error": "No used items found in verification session"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except VerificationSession.DoesNotExist:
+                logger.warning(f"No verification session found for operation session: {pk}")
+                return Response(
+                    {"error": "No verification session found. Please complete verification first."},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
             
             # # Check if operation session is in a state where outbound tracking makes sense
@@ -82,13 +101,29 @@ class OutboundTrackingViewSet(viewsets.ViewSet):
             #         status=status.HTTP_400_BAD_REQUEST
             #     )
             
-            # Initialize outbound tracking service
-            logger.debug(f"Creating OutboundTrackingService for operation_session_id={pk}")
-            service = OutboundTrackingService(operation_session.id)
+            # Initialize outbound tracking service - use existing one if available
+            logger.info(f"Creating OutboundTrackingService for operation_session_id={pk}")
+            try:
+                # Create service using existing record (if any)
+                service = OutboundTrackingService(operation_session.id)
+            except Exception as e:
+                logger.error(f"Failed to initialize OutboundTrackingService: {str(e)}")
+                return Response(
+                    {"error": "Failed to initialize outbound tracking service", "details": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             
-            # Always perform a new outbound check
-            logger.debug(f"Performing outbound check for operation_session_id={pk} with scan_duration={scan_duration}")
-            result = service.perform_outbound_check(scan_duration, verbose)
+            # Always perform a fresh scan and update the existing record
+            logger.info(f"Performing fresh scan for operation_session_id={pk} with scan_duration={scan_duration}")
+            try:
+                result = service.perform_outbound_check(scan_duration, verbose)
+                logger.debug(f"Outbound check result: {result}")
+            except Exception as e:
+                logger.error(f"Error performing outbound check: {str(e)}", exc_info=True)
+                return Response(
+                    {"error": "Error performing outbound check", "details": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             
             # Add the current user to the result if authenticated
             if request.user.is_authenticated:
