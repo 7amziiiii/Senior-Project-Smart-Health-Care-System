@@ -1,6 +1,8 @@
 // Equipment Overview Component Styles
 
 // Variables (matching maintenance dashboard)
+@use 'sass:color';
+
 $primary-color: #2c3e50;
 $secondary-color: #3498db;
 $accent-color: #2ecc71;
@@ -333,7 +335,7 @@ $light-border: 1px solid #dee2e6;
               transition: all 0.2s ease;
               
               &:hover {
-                background-color: darken($secondary-color, 10%);
+                background-color: color.adjust($secondary-color, $lightness: -10%);
               }
               
               &:disabled {

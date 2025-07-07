@@ -1,10 +1,89 @@
 <div class="feature-container">
+  <div class="container">
   <div class="feature-header">
-    <h1>Large Equipment Tracking</h1>
-    <button class="btn btn-secondary" routerLink="/dashboard">Back to Dashboard</button>
+    <div class="header-content">
+      <button (click)="goBack()" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <h1>Large Equipment for {{ surgeryName }}</h1>
+    </div>
+    <div class="status-bar">
+      <div class="breadcrumbs">
+        <span>Dashboard</span> &gt; 
+        <span>{{ surgeryName }}</span> &gt; 
+        <span class="current">Large Equipment</span>
+      </div>
+    </div>
   </div>
-  <div class="feature-content">
-    <p>This is a placeholder for the Large Equipment Tracking feature.</p>
-    <p>Implementation coming soon...</p>
+
+  <div class="equipment-container" *ngIf="!loading; else loadingTemplate">
+    <div *ngIf="errorMessage" class="error-message">
+      <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+    </div>
+    
+    <div *ngIf="requestSent" class="success-message">
+      <i class="fas fa-check-circle"></i> Equipment request sent successfully to maintenance team!
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat-card">
+        <div class="stat-title">Total Equipment</div>
+        <div class="stat-value">{{ equipmentList.length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Available</div>
+        <div class="stat-value">{{ availableEquipmentCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Missing</div>
+        <div class="stat-value">{{ missingEquipmentCount }}</div>
+      </div>
+    </div>
+
+    <div class="equipment-table-container">
+      <h2>Required Large Equipment</h2>
+      <table class="equipment-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of equipmentList" [class.missing]="!item.isAvailable">
+            <td>{{ item.equipment.name }}</td>
+            <td>{{ item.equipment.equipment_id }}</td>
+            <td>{{ item.equipment.equipment_type }}</td>
+            <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
+              {{ item.isAvailable ? 'Available' : 'Missing' }}
+            </td>
+            <td>
+              <button 
+                *ngIf="!item.isAvailable" 
+                class="request-btn" 
+                (click)="requestEquipment(item.equipment)"
+                [disabled]="requestInProgress || item.equipment.status === 'in_use'"
+              >
+                <i class="fas fa-plus-circle"></i> Request
+              </button>
+              <span *ngIf="item.isAvailable" class="available-text">No action needed</span>
+            </td>
+          </tr>
+          <tr *ngIf="equipmentList.length === 0">
+            <td colspan="5" class="no-data">No equipment required for this surgery</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+
+  <ng-template #loadingTemplate>
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading equipment data...</p>
+    </div>
+  </ng-template>
 </div>

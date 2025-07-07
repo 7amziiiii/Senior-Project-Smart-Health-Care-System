@@ -93,7 +93,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       alert('Please select a surgery first');
       return;
     }
-    this.router.navigate([`/${featurePath}`]);
+    
+    // If navigating to equipment tracking, include the surgery ID in the route
+    if (featurePath === 'equipment-tracking') {
+      this.router.navigate([`/${featurePath}/${this.selectedSurgery.id}`]);
+    } else {
+      this.router.navigate([`/${featurePath}`]);
+    }
   }
 
   ngOnDestroy(): void {
