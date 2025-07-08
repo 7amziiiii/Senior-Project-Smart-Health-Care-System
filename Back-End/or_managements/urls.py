@@ -52,6 +52,7 @@ from .views.verification.verification_views import VerificationViewSet
 from .views.verification.outbound_tracking_views import OutboundTrackingViewSet
 from .views.log import OutboundTrackingList
 from .views.ml_views import equipment_usage_logs, equipment_maintenance_history, procedure_stats
+from .views.rfid_tags.rfid_tag_scan_view import scan_and_register_rfid
 from .views.equipment_request_views import (EquipmentRequestViewSet, available_equipment, 
     pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats)
 
@@ -84,6 +85,7 @@ urlpatterns = [
     # RFID Tag URLs
     path('rfid-tags/', RFIDTagListCreateView.as_view(), name='rfid-tag-list-create'),
     path('rfid-tags/<int:pk>/', RFIDTagRetrieveUpdateDestroyView.as_view(), name='rfid-tag-detail'),
+    path('rfid-tags/scan/', scan_and_register_rfid, name='rfid-tag-scan'),
     
     # Operation Room URLs
     path('operation-rooms/', OperationRoomListCreateView.as_view(), name='operation-room-list-create'),

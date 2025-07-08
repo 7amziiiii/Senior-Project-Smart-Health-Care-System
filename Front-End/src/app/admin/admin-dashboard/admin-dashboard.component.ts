@@ -5,15 +5,34 @@ import { AdminService, PendingUser } from '../../services/admin.service';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FormsModule } from '@angular/forms';
+import { RFIDTagService, RFIDTag, Asset } from '../../services/rfid-tag.service';
+import { InstrumentService, Instrument } from '../../services/instrument.service';
+import { TrayService } from '../../services/tray.service';
+import { HttpClientModule } from '@angular/common/http';
+// Using alerts for notifications
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, HttpClientModule],
   templateUrl: './admin-dashboard.component.html',
-  styleUrl: './admin-dashboard.component.scss'
+  styleUrls: ['./admin-dashboard.component.scss']
 })
 export class AdminDashboardComponent implements OnInit {
+  // Instrument registration properties
+  instrumentTypes = [
+    { id: 1, name: 'Scalpel' },
+    { id: 2, name: 'Forceps' },
+    { id: 3, name: 'Scissors' },
+    { id: 4, name: 'Clamp' },
+    { id: 5, name: 'Retractor' }
+  ];
+  selectedInstrumentType = '';
+  newInstrumentName = '';
+  newInstrumentStatus = 'available';
+  availableTrays: any[] = [];
+  selectedTrayId = '';
+  editMode = false;
   // User approval panel properties
   pendingUsers: PendingUser[] = [];
   loading = false;
@@ -36,6 +55,12 @@ export class AdminDashboardComponent implements OnInit {
   scanningRfid = false;
   rfidFound = false;
   foundRfidId = '';
+  foundTag: RFIDTag | null = null;
+  tagIsLinked = false;
+  linkedAssetType: string | null = null;
+  linkedAsset: Asset | null = null;
+  scanError = '';  
+  registrationInProgress = false; // Flag to track when registration is in progress
   
   // RFID Reader properties
   availablePorts = ['COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6'];
@@ -99,13 +124,10 @@ export class AdminDashboardComponent implements OnInit {
     return instrument ? instrument.quantity : 1;
   }
   
-  updateInstrumentQuantity(instrumentId: number, quantity: any) {
-    const numQuantity = parseInt(quantity, 10);
-    if (isNaN(numQuantity) || numQuantity < 1) return;
-    
+  updateInstrumentQuantity(instrumentId: number, quantity: number) {
     const index = this.selectedInstruments.findIndex(i => i.id === instrumentId);
     if (index !== -1) {
-      this.selectedInstruments[index].quantity = numQuantity;
+      this.selectedInstruments[index].quantity = quantity;
     }
   }
   
@@ -115,7 +137,7 @@ export class AdminDashboardComponent implements OnInit {
   handleQuantityChange(event: Event, instrumentId: number) {
     const input = event.target as HTMLInputElement;
     if (input && input.value) {
-      this.updateInstrumentQuantity(instrumentId, input.value);
+      this.updateInstrumentQuantity(instrumentId, parseInt(input.value, 10));
     }
   }
   
@@ -137,11 +159,6 @@ export class AdminDashboardComponent implements OnInit {
   
   // Instrument registration properties
   
-  // Instrument registration properties
-  selectedInstrumentType = '';
-  newInstrumentStatus = 'available';
-  selectedTrayId = '';
-  
   // Large Equipment registration properties
   newEquipmentName = '';
   newEquipmentId = '';
@@ -155,42 +172,61 @@ export class AdminDashboardComponent implements OnInit {
   // Logs properties
   activeLogType = 'verification';
   
-  // Available instrument types
-  instrumentTypes = [
-    { id: 'scalpel', name: 'Scalpel' },
-    { id: 'forceps', name: 'Forceps' },
-    { id: 'retractor', name: 'Retractor' },
-    { id: 'scissors', name: 'Surgical Scissors' },
-    { id: 'needle_holder', name: 'Needle Holder' },
-    { id: 'clamp', name: 'Clamp' },
-    { id: 'suction', name: 'Suction Tube' },
-    { id: 'electrocautery', name: 'Electrocautery Device' },
-    { id: 'dilator', name: 'Dilator' },
-    { id: 'speculum', name: 'Speculum' }
-  ];
-  
-  availableTrays = [
-    { id: 'tray1', name: 'Surgical Tray A' },
-    { id: 'tray2', name: 'Orthopedic Tray' },
-    { id: 'tray3', name: 'Cardiac Tray' }
-  ];
-  
   constructor(
     private adminService: AdminService, 
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private rfidTagService: RFIDTagService,
+    private instrumentService: InstrumentService,
+    private trayService: TrayService
   ) {}
 
   ngOnInit(): void {
-    // Initial state shows the menu, not any specific panel
-    this.showApprovalPanel = false;
-    this.showDashboard = false;
-    this.showInstruments = false;
+    // Initialize dashboard based on saved state or default view
+    this.showDashboard = true;
     
-    // Only load pending users if approval panel is shown
-    if (this.showApprovalPanel) {
-      this.loadPendingUsers();
-    }
+    // Load any necessary data for the dashboard
+    // For example, fetch pending users
+    this.loadPendingUsers();
+    
+    // Load available trays for instrument registration
+    this.loadAvailableTrays();
+    
+    console.log('Admin dashboard initialized');
+  }
+  
+  /**
+   * Load available trays from the backend
+   */
+  loadAvailableTrays(): void {
+    console.log('Attempting to load trays...');
+    this.trayService.getTrays().subscribe({
+      next: (trays: any[]) => {
+        this.availableTrays = trays || [];
+        console.log('Loaded available trays:', this.availableTrays);
+        
+        if (this.availableTrays.length === 0) {
+          console.warn('No trays were returned from the backend');
+          // Add some mock trays for testing if none are returned
+          this.availableTrays = [
+            { id: 1, name: 'General Surgery Tray', type: 'Surgery' },
+            { id: 2, name: 'Orthopedic Tray', type: 'Orthopedic' },
+            { id: 3, name: 'Cardiac Tray', type: 'Cardiac' }
+          ];
+          console.log('Added mock trays for testing:', this.availableTrays);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error loading trays:', error);
+        // Add some mock trays for testing in case of error
+        this.availableTrays = [
+          { id: 1, name: 'General Surgery Tray', type: 'Surgery' },
+          { id: 2, name: 'Orthopedic Tray', type: 'Orthopedic' },
+          { id: 3, name: 'Cardiac Tray', type: 'Cardiac' }
+        ];
+        console.log('Added mock trays after error:', this.availableTrays);
+      }
+    });
   }
 
   // Navigation methods
@@ -300,9 +336,15 @@ export class AdminDashboardComponent implements OnInit {
   private resetRegistrationForms(): void {
     this.rfidFound = false;
     this.foundRfidId = '';
+    this.foundTag = null;
+    this.tagIsLinked = false;
+    this.linkedAssetType = null;
+    this.linkedAsset = null;
+    this.scanError = '';
     
     // Reset instrument form
     this.selectedInstrumentType = '';
+    this.newInstrumentName = '';
     this.newInstrumentStatus = 'available';
     this.selectedTrayId = '';
     
@@ -316,48 +358,162 @@ export class AdminDashboardComponent implements OnInit {
     // Reset tray form
     this.newTrayType = '';
   }
+ 
+
+  // Edit mode flag for linked instruments/equipment is declared at the top of the class
   
   scanForRfid(): void {
+    if (this.scanningRfid) return;
+    
     this.scanningRfid = true;
     this.rfidFound = false;
+    this.foundRfidId = '';
+    this.foundTag = null;
+    this.tagIsLinked = false;
+    this.linkedAssetType = null;
+    this.linkedAsset = null;
+    this.scanError = '';
+    this.editMode = false; // Reset edit mode when starting a new scan
     
-    // Simulate RFID scanning
-    setTimeout(() => {
-      // Generate a random RFID tag ID
-      this.foundRfidId = 'RFID-' + Math.floor(100000 + Math.random() * 900000);
-      this.scanningRfid = false;
-      this.rfidFound = true;
-    }, 2000);
+    console.log('Starting RFID scan...');
+    
+    // Scan for 5 seconds
+    this.rfidTagService.scanAndRegisterTag(5)
+      .subscribe({
+        next: (response) => {
+          this.scanningRfid = false;
+          console.log('RFID scan successful:', response);
+          
+          if (response.tag && response.tag.tag_id) {
+            this.rfidFound = true;
+            this.foundTag = response.tag;
+            
+            // Try to parse the tag_id if it's a JSON string
+            try {
+              if (response.tag.tag_id && 
+                  (response.tag.tag_id.includes('{') || 
+                   response.tag.tag_id.includes('"epc"') || 
+                   response.tag.tag_id.includes("'epc'"))) 
+              {
+                // Try to parse the JSON string
+                const tagData = JSON.parse(response.tag.tag_id.replace(/'/g, '"'));
+                this.foundRfidId = tagData.epc || response.tag.tag_id;
+              } else {
+                // Use the tag_id as is
+                this.foundRfidId = response.tag.tag_id;
+              }
+            } catch (e) {
+              console.warn('Failed to parse tag_id:', e);
+              this.foundRfidId = response.tag.tag_id;
+            }
+            
+            // Check if the tag is linked to an asset
+            if (response.is_linked) {
+              this.tagIsLinked = true;
+              this.linkedAssetType = response.asset_type || null;
+              this.linkedAsset = response.asset || null;
+              
+              console.log('Tag is linked to asset:', this.linkedAssetType, this.linkedAsset);
+              
+              // If it's linked to an instrument, fetch the instrument details and pre-populate form
+              if (this.linkedAssetType === 'instrument' && this.linkedAsset?.['id']) {
+                this.fetchInstrumentDetails(this.linkedAsset['id']);
+                
+                // Pre-populate form fields with instrument data
+                this.newInstrumentName = this.linkedAsset['name'] || '';
+                this.selectedInstrumentType = this.linkedAsset['instrument_type_id']?.toString() || '';
+                this.newInstrumentStatus = this.linkedAsset['status'] || 'available';
+                this.selectedTrayId = this.linkedAsset['tray_id']?.toString() || '';
+              }
+            }
+          } else {
+            this.scanError = 'No RFID tag detected during scan.';
+            console.warn('No RFID tag detected during scan.');
+          }
+        },
+        error: (error) => {
+          this.scanningRfid = false;
+          this.scanError = error.message || 'Failed to scan for RFID tags. Please try again.';
+          console.error('RFID scan error:', error);
+        }
+      });
   }
-  
-  saveInstrument(): void {
-    if (!this.selectedInstrumentType) {
-      alert('Please select an instrument type');
-      return;
-    }
-    
-    // Find the selected instrument type name from the array
-    const selectedType = this.instrumentTypes.find(type => type.id === this.selectedInstrumentType);
-    
-    const instrument = {
-      id: Math.floor(1000 + Math.random() * 9000),
-      rfidTagId: this.foundRfidId,
-      name: selectedType ? selectedType.name : this.selectedInstrumentType,
-      status: this.newInstrumentStatus,
-      trayId: this.selectedTrayId || null
-    };
-    
-    // Simulate saving the instrument
-    console.log('Saving instrument:', instrument);
-    alert(`Instrument ${instrument.name} registered successfully with RFID tag ${instrument.rfidTagId}`);
-    
-    // Reset the form
-    this.resetInstrumentForm();
-  }
-  
+
   cancelRegistration(): void {
     this.rfidFound = false;
+    this.editMode = false;
     this.resetRegistrationForms();
+  }
+  
+  // Enable edit mode for linked instruments
+  enableEditMode(): void {
+    this.editMode = true;
+  }
+  
+  // Cancel edit mode
+  cancelEditMode(): void {
+    this.editMode = false;
+    // Reset form fields to original values from linkedAsset
+    if (this.linkedAsset && this.linkedAssetType === 'instrument') {
+      this.newInstrumentName = this.linkedAsset['name'] || '';
+      this.selectedInstrumentType = this.linkedAsset['instrument_type_id']?.toString() || '';
+      this.newInstrumentStatus = this.linkedAsset['status'] || 'available';
+      this.selectedTrayId = this.linkedAsset['tray_id']?.toString() || '';
+    }
+  }
+  
+  // Update an existing instrument
+  updateInstrument(): void {
+    if (!this.foundTag || !this.linkedAsset) return;
+    
+    const instrumentId = this.linkedAsset['id'];
+    const updatedInstrument: any = {
+      name: this.newInstrumentName,
+      status: this.newInstrumentStatus
+    };
+    
+    // Only include tray if selected
+    if (this.selectedTrayId) {
+      updatedInstrument.tray = this.selectedTrayId;
+    }
+    
+    this.instrumentService.updateInstrument(instrumentId, updatedInstrument)
+      .subscribe({
+        next: (response) => {
+          console.log('Instrument updated successfully:', response);
+          this.editMode = false;
+          // Refresh the instrument details
+          this.fetchInstrumentDetails(instrumentId);
+          alert('Instrument updated successfully');
+        },
+        error: (error) => {
+          console.error('Failed to update instrument:', error);
+          alert('Failed to update instrument. Please try again.');
+        }
+      });
+  }
+  
+  // Delete an instrument
+  deleteInstrument(): void {
+    if (!this.foundTag || !this.linkedAsset) return;
+    
+    const instrumentId = this.linkedAsset.id;
+    
+    // Confirm before deleting
+    if (confirm('Are you sure you want to delete this instrument? This action cannot be undone.')) {
+      this.instrumentService.deleteInstrument(this.linkedAsset['id'])
+        .subscribe({
+          next: () => {
+            console.log('Instrument deleted successfully');
+            alert('Instrument deleted successfully');
+            this.cancelRegistration();
+          },
+          error: (error) => {
+            console.error('Failed to delete instrument:', error);
+            alert('Failed to delete instrument. Please try again.');
+          }
+        });
+    }
   }
   
   /**
@@ -366,14 +522,80 @@ export class AdminDashboardComponent implements OnInit {
   resetInstrumentForm(): void {
     // Keep this for backward compatibility
     this.foundRfidId = '';
+    this.foundTag = null;
+    this.tagIsLinked = false;
+    this.linkedAssetType = null;
+    this.linkedAsset = null;
     this.selectedInstrumentType = '';
     this.newInstrumentStatus = 'available';
     this.selectedTrayId = '';
   }
   
   /**
-   * Save a large equipment registration with RFID tag
+   * Save instrument registration with RFID tag
    */
+  saveInstrument(): void {
+    if (!this.rfidFound || !this.foundTag) {
+      alert('Please scan an RFID tag first');
+      return;
+    }
+    
+    if (this.registrationInProgress) return;
+    
+    const selectedType = this.instrumentTypes.find(type => type.id.toString() === this.selectedInstrumentType);
+    
+    // Check if the tag is already linked to an asset
+    if (this.tagIsLinked) {
+      alert(`This RFID tag is already linked to a ${this.linkedAssetType}. Please use a different tag.`);
+      return;
+    }
+    
+    // Create instrument object for API
+    const instrument: Instrument = {
+      name: selectedType ? selectedType.name : this.selectedInstrumentType,
+      status: this.newInstrumentStatus,
+      rfid_tag: this.foundTag.id
+    };
+    
+    // Add tray association if selected
+    if (this.selectedTrayId && this.selectedTrayId !== 'null') {
+      instrument.tray_id = parseInt(this.selectedTrayId);
+    }
+    
+    this.registrationInProgress = true;
+    
+    // Call the API to create the instrument
+    this.instrumentService.createInstrument(instrument)
+      .pipe(
+        finalize(() => {
+          this.registrationInProgress = false;
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('Instrument registered successfully:', response);
+          alert(`Instrument ${response.name} registered successfully with RFID tag ${this.foundRfidId}`);
+          
+          // Reset the form
+          this.resetRegistrationForms();
+        },
+        error: (error) => {
+          console.error('Error registering instrument:', error);
+          let errorMessage = 'Failed to register instrument. ';
+          
+          if (error.error && error.error.detail) {
+            errorMessage += error.error.detail;
+          } else if (error.error && typeof error.error === 'string') {
+            errorMessage += error.error;
+          } else if (error.message) {
+            errorMessage += error.message;
+          }
+          
+          alert(errorMessage);
+        }
+      });
+  }
+  
   saveLargeEquipment(): void {
     if (!this.newEquipmentName || !this.newEquipmentId || !this.newEquipmentType) {
       alert('Please fill in all required fields');
@@ -497,6 +719,34 @@ export class AdminDashboardComponent implements OnInit {
     this.activeLogType = logType;
     // In a real implementation, this would fetch the selected log type from the backend
     console.log(`Selected log type: ${logType}`);
+  }
+  
+  /**
+   * Fetch instrument details when a tag linked to an instrument is scanned
+   */
+  fetchInstrumentDetails(instrumentId: number): void {
+    this.instrumentService.getInstrument(instrumentId)
+      .subscribe({
+        next: (instrument) => {
+          console.log('Fetched instrument details:', instrument);
+          // Update linkedAsset with complete instrument details
+          // Ensure the object conforms to the Asset interface with required properties
+          this.linkedAsset = {
+            id: instrument.id || 0,  // Ensure id is always a number
+            name: instrument.name,
+            status: instrument.status,
+            status_display: instrument.status_display,
+            rfid_tag: instrument.rfid_tag,
+            tray_id: instrument.tray_id
+          };
+          
+          // Show a message to the user about the linked instrument
+          alert(`This RFID tag is already linked to instrument: ${instrument.name} (Status: ${instrument.status_display || instrument.status})`);
+        },
+        error: (error) => {
+          console.error('Error fetching instrument details:', error);
+        }
+      });
   }
 
 }
