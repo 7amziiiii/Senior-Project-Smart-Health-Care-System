@@ -1,0 +1,113 @@
+// Common Header Styles
+@use 'sass:color';
+
+$primary-color: #3a6ea5;
+$secondary-color: #6c757d;
+$success-color: #28a745;
+$border-color: #dee2e6;
+
+// Standard page header style
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $border-color;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: #343a40;
+      font-weight: 500;
+      
+      i {
+        margin-right: 0.5rem;
+        color: $primary-color;
+      }
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: $primary-color;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      margin-right: 1.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: rgba($primary-color, 0.1);
+      }
+
+      i {
+        margin-right: 0.5rem;
+      }
+    }
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+
+    .action-btn {
+      background-color: $primary-color;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: color.adjust($primary-color, $lightness: -10%);
+      }
+
+      i {
+        margin-right: 0.5rem;
+      }
+
+      &.secondary-btn {
+        background-color: $secondary-color;
+
+        &:hover {
+          background-color: color.adjust($secondary-color, $lightness: -10%);
+        }
+      }
+    }
+  }
+}
+
+// Standard breadcrumbs style
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: $secondary-color;
+
+  span {
+    margin: 0 0.25rem;
+
+    &.current {
+      color: $primary-color;
+      font-weight: 500;
+    }
+  }
+
+  .separator {
+    margin: 0 0.25rem;
+  }
+}

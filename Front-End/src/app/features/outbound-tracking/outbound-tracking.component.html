@@ -1,24 +1,5 @@
 <div class="outbound-tracking-container">
-  <!-- Header -->
-  <header>
-    <div class="header-content">
-      <div class="header-left">
-        <button class="back-button" (click)="goBack()">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
-        <h1>Instruments Outbound Tracking</h1>
-      </div>
-    </div>
-    
-    <!-- Breadcrumb Navigation -->
-    <div class="status-bar">
-      <div class="breadcrumbs">
-        <span (click)="goBack()">Dashboard</span> &gt; 
-        <span class="current">Outbound Tracking</span>
-        <span *ngIf="selectedSurgery">&gt; {{selectedSurgery.name}}</span>
-      </div>
-    </div>
-  </header>
+  <!-- Content starts directly without redundant header -->
   
   <!-- Loading state -->
   <div *ngIf="loading" class="loading-container">

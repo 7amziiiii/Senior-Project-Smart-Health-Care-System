@@ -11,16 +11,45 @@
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 10px;
   
-  h3 {
-    margin: 0 0 5px 0;
-    font-size: 1.2rem;
-    color: #333;
-  }
-  
-  p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #666;
+  .header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    
+    .back-button {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      color: #333;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      
+      i {
+        margin-right: 5px;
+      }
+      
+      &:hover {
+        background-color: #e9ecef;
+      }
+    }
+    
+    .title-section {
+      h3 {
+        margin: 0 0 5px 0;
+        font-size: 1.2rem;
+        color: #333;
+      }
+      
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #666;
+      }
+    }
   }
 }
 

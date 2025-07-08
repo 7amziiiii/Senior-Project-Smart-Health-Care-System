@@ -1,11 +1,137 @@
+// Variables
+$primary-color: #05366e;
+$secondary-color: #3c7ab7;
+$text-light: #ffffff;
+$text-dark: #0a2344;
+$bg-light: #f8f9fa;
+$border-light: #e9ecef;
+
 // Main container styles
 .dashboard-container {
-  padding: 1.5rem 2rem;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f8f9fa;
+  background-color: $bg-light;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  padding: 0;
+  margin: 0;
+}
+
+// Professional header styles
+.main-header {
+  background: linear-gradient(to right, $primary-color, $secondary-color);
+  padding: 0.75rem 1.5rem;
+  color: $text-light;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .branding-area {
+    display: flex;
+    align-items: center;
+    
+    .hospital-logo {
+      height: 38px;
+      object-fit: contain;
+      margin-right: 1rem;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    }
+    
+    .title-area {
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: $text-light;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      background-color: rgba(255, 255, 255, 0.15);
+      color: $text-light;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+      }
+      
+      &.admin-btn {
+        background-color: rgba(255, 255, 255, 0.25);
+      }
+      
+      i {
+        font-size: 1rem;
+      }
+    }
+  }
+}
+
+// Breadcrumb navigation
+.breadcrumb-nav {
+  background-color: #fff;
+  border-bottom: 1px solid $border-light;
+  padding: 0.75rem 2rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  
+  .breadcrumbs-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .breadcrumb-list {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.9rem;
+    
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      color: #6c757d;
+      
+      &:not(:last-child)::after {
+        content: '/';
+        margin: 0 0.5rem;
+        color: #ced4da;
+      }
+      
+      i {
+        margin-right: 0.5rem;
+        font-size: 0.85rem;
+      }
+      
+      &.active {
+        color: $primary-color;
+        font-weight: 500;
+      }
+    }
+  }
 }
 
 // Dashboard header styles

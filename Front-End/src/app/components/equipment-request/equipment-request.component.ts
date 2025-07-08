@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
 import { LargeEquipment, EquipmentRequest } from '../../models/large-equipment.model';
 import { EquipmentService } from '../../services/equipment.service';
 import { Surgery } from '../../services/surgery-data.service';
@@ -28,6 +29,7 @@ export class EquipmentRequestComponent implements OnInit, OnDestroy {
 
   constructor(
     private equipmentService: EquipmentService,
+    private router: Router,
     private authService: AuthService
   ) {}
 
@@ -40,6 +42,16 @@ export class EquipmentRequestComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+  
+  goBack() {
+    // Navigate back to dashboard with the surgery still selected
+    this.router.navigate(['/dashboard'], { 
+      queryParams: { 
+        showFeatures: 'true', 
+        keepSurgeryContext: 'true' 
+      }
+    });
   }
 
   loadAvailableEquipment(): void {

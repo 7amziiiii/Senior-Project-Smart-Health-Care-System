@@ -1,1 +1,61 @@
-<router-outlet></router-outlet>
+<!-- Global Professional Dashboard Header (hidden on auth pages) -->
+<header class="main-header" *ngIf="isLoggedIn && !isAuthPage">
+  <div class="header-container">
+    <!-- Logo and Title Area -->
+    <div class="branding-area">
+      <img src="assets/logo.png" alt="SHCS Logo" class="hospital-logo">
+      <div class="title-area">
+        <h1>OR Management Dashboard</h1>
+      </div>
+    </div>
+    
+    <!-- Navigation Actions -->
+    <div class="header-actions">
+      <a *ngIf="isAdmin" routerLink="/admin" class="action-btn admin-btn">
+        <i class="fas fa-user-shield"></i>
+        <span>Admin Panel</span>
+      </a>
+      <button class="action-btn logout-btn" (click)="logout()">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Logout</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Global Breadcrumb Navigation (hidden on auth pages) -->
+<nav class="breadcrumb-nav" *ngIf="isLoggedIn && !isAuthPage">
+  <div class="breadcrumbs-container">
+    <div class="breadcrumb-actions">
+      <button class="back-btn" *ngIf="(currentFeature && currentFeature !== 'OR Dashboard') || (selectedSurgery && currentFeature === 'OR Dashboard')" (click)="navigateBack()">
+        <i class="fas fa-arrow-left"></i>
+        <span>Back</span>
+      </button>
+    </div>
+    <ol class="breadcrumb-list">
+      <!-- First level: OR Dashboard -->
+      <li class="breadcrumb-item">
+        <a routerLink="/dashboard">
+          OR Dashboard
+        </a>
+      </li>
+      
+      <!-- Second level: Surgery Name (if selected) -->
+      <li class="breadcrumb-item" *ngIf="selectedSurgery">
+        <a [routerLink]="['/dashboard']" [queryParams]="{ showFeatures: 'true', keepSurgeryContext: 'true' }">
+          {{ selectedSurgery.name }}
+        </a>
+      </li>
+      
+      <!-- Third level: Feature Name (if in a feature) -->
+      <li class="breadcrumb-item" *ngIf="currentFeature && currentFeature !== 'OR Dashboard'">
+        <span>{{ currentFeature }}</span>
+      </li>
+    </ol>
+  </div>
+</nav>
+
+<!-- Main Content Area with Consistent Borders -->
+<div class="app-container">
+  <router-outlet></router-outlet>
+</div>

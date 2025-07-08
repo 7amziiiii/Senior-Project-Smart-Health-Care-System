@@ -33,7 +33,7 @@ export class EquipmentTrackingComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private equipmentService: EquipmentService,
-    private surgeryService: SurgeryDataService
+    private surgeryDataService: SurgeryDataService
   ) {
     this.surgeryId = Number(this.route.snapshot.paramMap.get('surgeryId'));
   }
@@ -47,7 +47,7 @@ export class EquipmentTrackingComponent implements OnInit {
   }
 
   loadSurgeryName(): void {
-    this.surgeryService.getSurgeryById(this.surgeryId).subscribe(surgery => {
+    this.surgeryDataService.getSurgeryById(this.surgeryId).subscribe((surgery: any) => {
       if (surgery) {
         this.surgeryName = surgery.name;
         

@@ -312,6 +312,95 @@
   }
 }
 
+.all-users-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+  }
+  
+  h3 {
+    font-size: 20px;
+    color: #2a3eb1;
+    margin-bottom: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .user-filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    
+    .role-filter {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #dee2e6;
+      background-color: #f8f9fa;
+      min-width: 150px;
+      font-size: 14px;
+      color: #495057;
+      
+      &:focus {
+        border-color: #2a3eb1;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(42, 62, 177, 0.15);
+      }
+    }
+    
+    .search-filter {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #dee2e6;
+      flex-grow: 1;
+      font-size: 14px;
+      
+      &:focus {
+        border-color: #2a3eb1;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(42, 62, 177, 0.15);
+      }
+      
+      &::placeholder {
+        color: #adb5bd;
+      }
+    }
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 15px;
+    
+    .pagination-btn {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 6px 12px;
+      cursor: pointer;
+      
+      &:hover {
+        background-color: #e9ecef;
+      }
+    }
+    
+    .page-info {
+      font-size: 14px;
+      color: #6c757d;
+    }
+  }
+}
+
 .selected-summary {
   margin-top: 15px;
   background-color: #f9f9f9;
@@ -445,6 +534,60 @@
   
   tbody tr:hover {
     background-color: #f9f9f9;
+  }
+  
+  .status-active {
+    color: #28a745;
+    font-weight: 500;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+  
+  .status-inactive {
+    color: #dc3545;
+    font-weight: 500;
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+  
+  .edit-btn, .disable-btn, .enable-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-right: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .edit-btn {
+    background-color: #f8f9fa;
+    color: #2a3eb1;
+    
+    &:hover {
+      background-color: #e2e6ea;
+    }
+  }
+  
+  .disable-btn {
+    background-color: #f8d7da;
+    color: #dc3545;
+    
+    &:hover {
+      background-color: #f5c6cb;
+    }
+  }
+  
+  .enable-btn {
+    background-color: #d4edda;
+    color: #28a745;
+    
+    &:hover {
+      background-color: #c3e6cb;
+    }
   }
 }
 
