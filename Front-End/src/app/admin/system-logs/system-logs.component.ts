@@ -2,17 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { SystemLogsService, SystemLog } from '../../services/system-logs.service';
 
-// Log interface to define log structure
-interface SystemLog {
-  id?: number;
-  timestamp: string;
-  user: string;
-  action: string;
-  details: string;
-  status: 'complete' | 'pending' | 'issue';
-  logType: 'verification' | 'outbound' | 'system';
-}
 
 @Component({
   selector: 'app-system-logs',
@@ -136,21 +127,68 @@ export class SystemLogsComponent implements OnInit {
   // Filtered logs property
   filteredLogs: SystemLog[] = [];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private systemLogsService: SystemLogsService
+  ) {}
 
   ngOnInit(): void {
-    // Simulate loading logs from a service
-    setTimeout(() => {
-      this.filteredLogs = [...this._logs];
-      this.calculateTotalPages();
-      this.loading = false;
-    }, 1000);
+    this.loading = true;
+    // Load logs from the backend API
+    this.loadLogs();
+  }
+  
+  // Load logs from backend API
+  loadLogs(): void {
+    this.systemLogsService.getAllLogs().subscribe({
+      next: (logs) => {
+        this._logs = logs;
+        this.filteredLogs = [...this._logs];
+        this.calculateTotalPages();
+        this.loading = false;
+        console.log('Logs loaded from API:', this._logs.length);
+      },
+      error: (error) => {
+        console.error('Error loading logs:', error);
+        this.loading = false;
+        // If API fails, use empty array
+        this._logs = [];
+        this.filteredLogs = [];
+        this.calculateTotalPages();
+      }
+    });
   }
 
   // Filter logs based on selected type
   selectLogType(type: string): void {
     this.activeLogType = type;
-    this.applyFilters();
+    
+    if (type !== 'all') {
+      this.loading = true;
+      // Fetch specific log type from the API
+      const apiCall = type === 'verification' 
+        ? this.systemLogsService.getVerificationLogs() 
+        : type === 'outbound' 
+          ? this.systemLogsService.getOutboundLogs() 
+          : this.systemLogsService.getEquipmentRequestLogs();
+          
+      apiCall.subscribe({
+        next: (logs) => {
+          this._logs = logs;
+          this.applyFilters();
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error(`Error loading ${type} logs:`, error);
+          this.loading = false;
+          // On error, keep current logs but apply filter
+          this.applyFilters();
+        }
+      });
+    } else {
+      // Load all logs for 'all' type
+      this.loadLogs();
+    }
   }
 
   // Apply all active filters
@@ -189,9 +227,10 @@ export class SystemLogsComponent implements OnInit {
     this.selectedDateRange = 'week';
     this.activeLogType = 'all';
     this.filterActive = false;
-    this.filteredLogs = [...this._logs];
     this.currentPage = 1;
-    this.calculateTotalPages();
+    
+    // Reload all logs from API to ensure fresh data
+    this.loadLogs();
   }
 
   // Navigate back to the admin dashboard

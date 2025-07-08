@@ -62,8 +62,11 @@
                 <td>{{ item.equipment.equipment_id }}</td>
                 <td>{{ item.equipment.equipment_type }}</td>
                 <td>{{ item.equipment.location || 'Unknown' }}</td>
-                <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
-                  {{ item.isAvailable ? 'Available' : 'Missing' }}
+                <td [class.status-available]="item.isAvailable || item.requestStatus === 'approved'" 
+                    [class.status-missing]="!item.isAvailable && item.requestStatus !== 'approved'" 
+                    [class.status-approved]="item.requestStatus === 'approved'">
+                  <ng-container *ngIf="item.requestStatus === 'approved'">Approved</ng-container>
+                  <ng-container *ngIf="item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
                 </td>
                 <td>
                   <button 
@@ -132,8 +135,11 @@
                 <td>{{ item.equipment.equipment_id }}</td>
                 <td>{{ item.equipment.equipment_type }}</td>
                 <td>{{ item.equipment.location || 'Unknown' }}</td>
-                <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
-                  {{ item.isAvailable ? 'Available' : 'Missing' }}
+                <td [class.status-available]="item.isAvailable || item.requestStatus === 'approved'" 
+                    [class.status-missing]="!item.isAvailable && item.requestStatus !== 'approved'" 
+                    [class.status-approved]="item.requestStatus === 'approved'">
+                  <ng-container *ngIf="item.requestStatus === 'approved'">Approved</ng-container>
+                  <ng-container *ngIf="item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
                 </td>
                 <td>
                   <button 

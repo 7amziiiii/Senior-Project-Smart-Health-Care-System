@@ -25,6 +25,9 @@ export class EquipmentTrackingComponent implements OnInit {
   missingEquipmentCount: number = 0;
   requestInProgress: boolean = false;
   requestSent: boolean = false;
+  roomScanInProgress: boolean = false;
+  roomScanComplete: boolean = false;
+  roomId: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -39,16 +42,26 @@ export class EquipmentTrackingComponent implements OnInit {
     console.log('Equipment Tracking initialized with surgery ID:', this.surgeryId);
     this.loadSurgeryEquipment();
     this.loadSurgeryName();
+    // Get the room associated with the surgery and scan it
+    this.loadRoomAndScan();
   }
 
   loadSurgeryName(): void {
     this.surgeryService.getSurgeryById(this.surgeryId).subscribe(surgery => {
       if (surgery) {
         this.surgeryName = surgery.name;
+        
+        // If the surgery has a room specified, store it for scanning
+        if (surgery.roomNumber) {
+          this.roomId = surgery.roomNumber;
+        }
       }
     });
   }
 
+  /**
+   * Loads surgery equipment from the API
+   */
   loadSurgeryEquipment(): void {
     this.loading = true;
     console.log(`Fetching equipment for surgery ID: ${this.surgeryId}`);
@@ -78,22 +91,14 @@ export class EquipmentTrackingComponent implements OnInit {
           const sample = this.equipmentList[0];
           console.log('Sample equipment item structure:', JSON.stringify(sample || {}));
           
-          // Separate equipment into in-room and normal lists
-          this.inRoomEquipment = this.equipmentList.filter(e => {
-            return e.equipment && e.equipment.location && 
-              e.equipment.location.toLowerCase().includes('room');
-          });
-          
-          this.normalEquipment = this.equipmentList.filter(e => {
-            return e.equipment && (!e.equipment.location || 
-              !e.equipment.location.toLowerCase().includes('room'));
-          });
+          // Initially separate equipment into normal list only
+          // (in-room will come from the room scan)
+          this.normalEquipment = [...this.equipmentList];
           
           // Get current request statuses for all equipment
           this.loadEquipmentRequestStatuses();
           
-          console.log(`Filtered ${this.inRoomEquipment.length} items for in-room equipment`);
-          console.log(`Filtered ${this.normalEquipment.length} items for normal equipment`);
+          console.log(`Loaded ${this.equipmentList.length} total equipment items`);
         } else {
           console.log('No equipment data received from API');
         }
@@ -170,6 +175,13 @@ export class EquipmentTrackingComponent implements OnInit {
               // Set both the new requestStatus and legacy isRequested flag
               item.requestStatus = matchingRequest.status;
               item.isRequested = true;
+              
+              // If equipment is approved, always mark it as available
+              // This ensures approved equipment isn't shown as missing
+              if (matchingRequest.status === 'approved') {
+                item.isAvailable = true;
+                console.log(`Equipment ${item.equipment.name} is approved, setting isAvailable=true`);
+              }
               
               console.log(`Updated equipment status: ${item.equipment.name} ` + 
                 `(ID: ${item.equipment.id}) - Status: ${matchingRequest.status}, ` + 
@@ -309,5 +321,179 @@ export class EquipmentTrackingComponent implements OnInit {
     this.router.navigate(['/dashboard'], navigationExtras);
   }
   
+  /**
+   * Load the room associated with the surgery and scan it for equipment
+   */
+  loadRoomAndScan(): void {
+    if (this.surgeryId <= 0) {
+      console.error('Cannot scan room: Invalid surgery ID');
+      return;
+    }
+    
+    // Wait for room ID to be available from surgery data
+    setTimeout(() => {
+      if (!this.roomId) {
+        console.warn('No room ID associated with this surgery. Using surgery ID as fallback.');
+        this.roomId = this.surgeryId.toString();
+      }
+      
+      this.scanRoom();
+    }, 1000); // Wait a second for other data to load
+  }
+  
+  /**
+   * Scan the room for equipment using RFID technology
+   */
+  scanRoom(): void {
+    if (!this.roomId) {
+      console.error('Cannot scan room: No room ID available');
+      return;
+    }
+    
+    console.log(`Scanning room ${this.roomId} for equipment...`);
+    this.roomScanInProgress = true;
+    
+    // Scan duration of 3 seconds
+    this.equipmentService.scanRoom(this.roomId, 3).subscribe({
+      next: (results) => {
+        console.log('Room scan results:', results);
+        console.log('Raw equipment_in_room data:', JSON.stringify(results.equipment_in_room || []));
+        this.roomScanComplete = true;
+        this.roomScanInProgress = false;
+        
+        // Reset in-room equipment list
+        this.inRoomEquipment = [];
+        
+        // Process equipment found in the room (both expected and unexpected)
+        // First, process equipment properly assigned to this room
+        if (results && results.equipment_in_room && Array.isArray(results.equipment_in_room)) {
+          console.log(`Found ${results.equipment_in_room.length} equipment items properly assigned to room`);
+          
+          // Map the equipment in room to our component model
+          results.equipment_in_room.forEach((item: any) => {
+            console.log('Processing scanned equipment item:', item.id, item.name);
+            
+            // Find the equipment in our full list (if it exists)
+            const existingItem = this.equipmentList.find(e => 
+              e.equipment && e.equipment.id === item.id
+            );
+            
+            if (existingItem) {
+              console.log('Found matching equipment in existing list:', existingItem);
+              this.inRoomEquipment.push(existingItem);
+              
+              // Remove from normal list to avoid duplication
+              const index = this.normalEquipment.findIndex(e => 
+                e.equipment && e.equipment.id === item.id
+              );
+              if (index !== -1) {
+                this.normalEquipment.splice(index, 1);
+              }
+            } else {
+              console.log('Equipment not in full list, creating new object');
+              // Handle equipment that was scanned but isn't in our full list
+              // We need to create a new object that matches our component model
+              const newEquipment: SurgeryEquipment = {
+                equipment: item,
+                surgery_id: this.surgeryId,
+                equipment_id: item.id,
+                isRequired: false,
+                isAvailable: item.status === 'available',
+                isRequested: false,
+                requestStatus: undefined
+              };
+              
+              console.log('Created new equipment object:', newEquipment);
+              this.inRoomEquipment.push(newEquipment);
+            }
+          });
+        }
+        
+        // Also process unexpected equipment (physically in the room but not assigned to it)
+        if (results && results.unexpected_equipment && Array.isArray(results.unexpected_equipment)) {
+          console.log(`Found ${results.unexpected_equipment.length} unexpected equipment items in room`);
+          
+          // Map the unexpected equipment to our component model
+          results.unexpected_equipment.forEach((item: any) => {
+            console.log('Processing unexpected equipment item:', item.id, item.name);
+            
+            // Find the equipment in our full list (if it exists)
+            const existingItem = this.equipmentList.find(e => 
+              e.equipment && e.equipment.id === item.id
+            );
+            
+            if (existingItem) {
+              console.log('Found matching equipment in existing list:', existingItem);
+              this.inRoomEquipment.push(existingItem);
+              
+              // Remove from normal list to avoid duplication
+              const index = this.normalEquipment.findIndex(e => 
+                e.equipment && e.equipment.id === item.id
+              );
+              if (index !== -1) {
+                this.normalEquipment.splice(index, 1);
+              }
+            } else {
+              console.log('Unexpected equipment not in full list, creating new object');
+              // Create a new object for this unexpected equipment
+              const newEquipment: SurgeryEquipment = {
+                equipment: item,
+                surgery_id: this.surgeryId,
+                equipment_id: item.id,
+                isRequired: false,
+                isAvailable: item.status === 'available',
+                isRequested: false,
+                requestStatus: undefined
+              };
+              
+              console.log('Created new equipment object for unexpected item:', newEquipment);
+              this.inRoomEquipment.push(newEquipment);
+            }
+          });
+        }
+        
+        console.log(`Total: Found ${this.inRoomEquipment.length} items in room via RFID scan (including unexpected items)`);
+        console.log(`${this.normalEquipment.length} equipment items not in room`);
+        
+        // Update request statuses for the new items
+        this.loadEquipmentRequestStatuses();
+      },
+      error: (error) => {
+        console.error('Error scanning room:', error);
+        this.errorMessage = 'Failed to scan room for equipment: ' + 
+          (error.error && error.error.detail ? error.error.detail : 'Server error');
+        this.roomScanInProgress = false;
+        
+        // Fallback to location-based filtering
+        this.fallbackToLocationFiltering();
+      }
+    });
+  }
+  
+  /**
+   * Fallback method that uses location string filtering if room scan fails
+   * This is only used if the RFID scan fails completely
+   */
+  fallbackToLocationFiltering(): void {
+    console.log('Falling back to location-based filtering...');
+    
+    // Reset arrays
+    this.inRoomEquipment = [];
+    this.normalEquipment = [];
+    
+    // Filter based on location string (original implementation)
+    this.inRoomEquipment = this.equipmentList.filter(e => {
+      return e.equipment && e.equipment.location && 
+        e.equipment.location.toLowerCase().includes('room');
+    });
+    
+    this.normalEquipment = this.equipmentList.filter(e => {
+      return e.equipment && (!e.equipment.location || 
+        !e.equipment.location.toLowerCase().includes('room'));
+    });
+    
+    console.log(`Filtered ${this.inRoomEquipment.length} items for in-room equipment (fallback)`);
+    console.log(`Filtered ${this.normalEquipment.length} items for normal equipment (fallback)`);
+  }
 
 }
