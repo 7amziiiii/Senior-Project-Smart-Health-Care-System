@@ -1,14 +1,17 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
+import sys
+import os
+import json
+import logging
 import joblib
 import pandas as pd
-import os
-import sys
-import json
 from datetime import datetime
-import numpy as np
+from typing import List, Dict, Any, Optional
+from fastapi import FastAPI, HTTPException, Body
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-# Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import training functions for retraining
@@ -16,13 +19,22 @@ from scripts.train_model import train_model, save_model, preprocess_data
 
 app = FastAPI(title="Predictive Maintenance API", version="1.0.0")
 
+# Configure CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:4200"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Load the model at startup
 model = None
 @app.on_event("startup")
 def load_model():
     global model
     try:
-        model_path = "models/maintenance_predictor_current.joblib"
+        model_path = "D:\\Senior\\Final Senior\\models\\maintenance_predictor_current.joblib"
         if os.path.exists(model_path):
             model = joblib.load(model_path)
             print(f"Model loaded from {model_path}")
@@ -69,9 +81,26 @@ def predict(request: PredictionRequest):
     if model is None:
         raise HTTPException(status_code=500, detail="Model not loaded")
     
-    # Convert request to dataframe
-    data = {k: [v] for k, v in request.dict().items() if k != 'equipment_id'}
-    df = pd.DataFrame(data)
+    # Extract request data and add missing features with default values
+    data = request.dict()
+    
+    # Create a mapping from frontend field names to model's expected field names
+    # The key issue is total_usage_hours in frontend maps to hours_used_total in model
+    mapped_data = {
+        # Map the fields that exist in frontend request to model's expected field names
+        'days_since_maintenance': data.get('days_since_maintenance', 0),
+        'hours_used_total': data.get('total_usage_hours', 0),  # Map total_usage_hours -> hours_used_total
+        
+        # Add default values for any other features the model expects but frontend doesn't send
+        'vibration_level': 1.0,  # Default value
+        'temperature': 25.0,     # Default value
+        'pressure_variance': 0.5, # Default value
+        'error_count_last_month': 0,  # Default value
+        'age_years': 2.0         # Default value
+    }
+    
+    # Convert to dataframe with all required features
+    df = pd.DataFrame({k: [v] for k, v in mapped_data.items()})
     
     # Make prediction
     try:
@@ -85,6 +114,8 @@ def predict(request: PredictionRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+
 
 @app.post("/log/maintenance")
 def log_maintenance(log: MaintenanceLogRequest):
@@ -157,4 +188,4 @@ async def _retrain_model():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)

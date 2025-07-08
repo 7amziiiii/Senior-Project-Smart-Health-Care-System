@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MlService, PredictionRequest } from '../../services/ml-service.service';
+import { MlService, PredictionRequest, MaintenancePrediction } from '../../services/ml-service.service';
 import { EquipmentService } from '../../services/equipment.service';
 import { EquipmentRequest } from '../../models/large-equipment.model';
 import { Subscription } from 'rxjs';
@@ -31,92 +31,7 @@ interface Equipment {
 })
 export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   today = new Date();
-  equipmentList: Equipment[] = [
-    {
-      id: 1,
-      name: 'Ventilator #A2234',
-      type: 'Respiratory',
-      location: 'OR Room 3',
-      lastService: '2025-01-15',
-      needsMaintenance: true,
-      confidence: 0.96,
-      equipmentId: 'EQ0001',
-      daysSinceMaintenance: 173,
-      totalUsageHours: 432,
-      avgDailyUsage: 2.5,
-      procedureCount: 87
-    },
-    {
-      id: 2,
-      name: 'X-Ray Machine',
-      type: 'Imaging',
-      location: 'Radiology Department',
-      lastService: '2024-12-10',
-      needsMaintenance: true,
-      confidence: 0.89,
-      equipmentId: 'EQ0002',
-      daysSinceMaintenance: 209,
-      totalUsageHours: 520,
-      avgDailyUsage: 2.5,
-      procedureCount: 104
-    },
-    {
-      id: 3,
-      name: 'ECG Monitor',
-      type: 'Cardiac',
-      location: 'ICU',
-      lastService: '2025-05-08',
-      needsMaintenance: false,
-      confidence: 0.12,
-      equipmentId: 'EQ0003',
-      daysSinceMaintenance: 60,
-      totalUsageHours: 150,
-      avgDailyUsage: 2.5,
-      procedureCount: 30
-    },
-    {
-      id: 4,
-      name: 'Anesthesia Machine',
-      type: 'Anesthesiology',
-      location: 'OR Room 2',
-      lastService: '2025-04-20',
-      needsMaintenance: false,
-      confidence: 0.08,
-      equipmentId: 'EQ0004',
-      daysSinceMaintenance: 78,
-      totalUsageHours: 186,
-      avgDailyUsage: 2.4,
-      procedureCount: 45
-    },
-    {
-      id: 5,
-      name: 'MRI Scanner',
-      type: 'Imaging',
-      location: 'Radiology Department',
-      lastService: '2025-05-15',
-      needsMaintenance: false,
-      confidence: 0.22,
-      equipmentId: 'EQ0005',
-      daysSinceMaintenance: 53,
-      totalUsageHours: 130,
-      avgDailyUsage: 2.5,
-      procedureCount: 28
-    },
-    {
-      id: 6,
-      name: 'Surgical Robot',
-      type: 'Robotics',
-      location: 'OR Room 1',
-      lastService: '2025-04-01',
-      needsMaintenance: false,
-      confidence: 0.31,
-      equipmentId: 'EQ0006',
-      daysSinceMaintenance: 97,
-      totalUsageHours: 212,
-      avgDailyUsage: 2.2,
-      procedureCount: 53
-    }
-  ];
+  equipmentList: Equipment[] = [];
   
   needMaintenanceCount = 0;
   goodConditionCount = 0;
@@ -124,6 +39,7 @@ export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   mlApiAvailable = false;
   selectedFilter: string = 'all';
   loading = false;
+  dataLoading = true; // Added for loading state during data fetching
   
   // Equipment request notifications
   equipmentRequests: EquipmentRequest[] = [];
@@ -140,10 +56,55 @@ export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   ) { }
   
   ngOnInit(): void {
-    this.totalEquipmentCount = this.equipmentList.length;
+    console.log('Predictive Maintenance Dashboard initializing...');
+    // Load real equipment data from backend
+    this.loadEquipment();
     this.checkMlApiAvailability();
-    this.refreshPredictions();
     this.subscribeToEquipmentRequests();
+  }
+  
+  private loadEquipment(): void {
+    console.log('Loading equipment from backend...');
+    this.equipmentService.getLargeEquipment().subscribe({
+      next: (equipment) => {
+        console.log('Received equipment from backend:', equipment);
+        
+        // Map backend equipment data to our Equipment interface
+        this.equipmentList = equipment.map(item => {
+          // Calculate days since maintenance based on last_maintenance_date
+          const lastMaintenance = item.last_maintenance_date ? new Date(item.last_maintenance_date) : new Date();
+          const today = new Date();
+          const diffTime = Math.abs(today.getTime() - lastMaintenance.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+          
+          return {
+            id: item.id,
+            name: item.name,
+            type: item.equipment_type || 'Unknown',
+            location: item.location || 'Hospital',
+            lastService: item.last_maintenance_date || 'Never',
+            needsMaintenance: false, // Will be set by ML prediction
+            confidence: 0,
+            equipmentId: item.equipment_id || `EQ${item.id.toString().padStart(4, '0')}`,
+            daysSinceMaintenance: diffDays,
+            // Set default values for ML features since they aren't in the LargeEquipment interface
+            totalUsageHours: 0, // Will track actual usage over time
+            avgDailyUsage: 0,   // Will calculate based on usage data
+            procedureCount: 0    // Will track from equipment requests
+          };
+        });
+        
+        this.totalEquipmentCount = this.equipmentList.length;
+        console.log('Mapped equipment list:', this.equipmentList);
+        
+        // Now get predictions for each piece of equipment
+        this.refreshPredictions();
+      },
+      error: (error) => {
+        console.error('Error loading equipment:', error);
+        // Show error message to user
+      }
+    });
   }
   
   ngOnDestroy(): void {
@@ -214,39 +175,107 @@ export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   }
   
   refreshPredictions(): void {
-    // In a real application, this would call the ML API for each piece of equipment
-    for (const equipment of this.equipmentList) {
-      this.getPrediction(equipment);
+    console.log('Refreshing predictions with real ML service...');
+    if (!this.equipmentList || this.equipmentList.length === 0) {
+      console.log('No equipment to predict for');
+      this.dataLoading = false;
+      return;
     }
+    
+    this.needMaintenanceCount = 0;
+    this.goodConditionCount = 0;
+    let pendingPredictions = this.equipmentList.length;
+    
+    // Process each equipment item through the ML service
+    this.equipmentList.forEach((equipment) => {
+      // Create prediction request from equipment data
+      const predictionRequest: PredictionRequest = {
+        equipment_id: equipment.equipmentId,
+        days_since_maintenance: equipment.daysSinceMaintenance,
+        total_usage_hours: equipment.totalUsageHours,
+        avg_daily_usage: equipment.avgDailyUsage,
+        procedure_count: equipment.procedureCount
+      };
+      
+      console.log(`Requesting prediction for ${equipment.name}:`, predictionRequest);
+      
+      this.mlService.getPrediction(predictionRequest).subscribe({
+        next: (prediction: MaintenancePrediction) => {
+          console.log(`Received prediction for ${equipment.name}:`, prediction);
+          
+          // Update equipment with ML prediction
+          equipment.needsMaintenance = prediction.maintenance_needed_soon;
+          equipment.confidence = prediction.confidence;
+          
+          // Count equipment by maintenance status
+          if (equipment.needsMaintenance) {
+            this.needMaintenanceCount++;
+          } else {
+            this.goodConditionCount++;
+          }
+          
+          // When all predictions are complete
+          pendingPredictions--;
+          if (pendingPredictions === 0) {
+            this.finalizePredictionResults();
+          }
+        },
+        error: (error) => {
+          console.error(`Error getting prediction for ${equipment.name}:`, error);
+          
+          // Fall back to simplified prediction for this item
+          this.applySimplifiedPrediction(equipment);
+          
+          // When all predictions are complete
+          pendingPredictions--;
+          if (pendingPredictions === 0) {
+            this.finalizePredictionResults();
+          }
+        }
+      });
+    });
   }
   
-  getPrediction(equipment: Equipment): void {
-    const request: PredictionRequest = {
-      equipment_id: equipment.equipmentId,
-      days_since_maintenance: equipment.daysSinceMaintenance,
-      total_usage_hours: equipment.totalUsageHours,
-      avg_daily_usage: equipment.avgDailyUsage,
-      procedure_count: equipment.procedureCount
-    };
+  private finalizePredictionResults(): void {
+    console.log('All predictions complete. Sorting and updating charts...');
     
-    // If the API is available, make a real call; otherwise use the simulated data
-    if (this.mlApiAvailable) {
-      try {
-        this.mlService.getPrediction(request).subscribe({
-          next: (result) => {
-            equipment.needsMaintenance = result.maintenance_needed_soon;
-            equipment.confidence = result.confidence;
-            this.updateMaintenanceCounts();
-          },
-          error: (err) => {
-            console.error('Error fetching prediction:', err);
-            // Fall back to simulated data - already set
-          }
-        });
-      } catch (error) {
-        console.error('Error calling ML service:', error);
-        // Fall back to simulated data - already set
+    // Sort equipment by maintenance need and confidence
+    this.equipmentList.sort((a, b) => {
+      if (a.needsMaintenance !== b.needsMaintenance) {
+        return a.needsMaintenance ? -1 : 1;
       }
+      // Handle possibly undefined confidence values
+      const confA = a.confidence || 0;
+      const confB = b.confidence || 0;
+      return confB - confA;
+    });
+    
+    this.updateMaintenanceCounts(); // Use existing method instead of missing updateCharts
+    this.dataLoading = false;
+  }
+  
+  private applySimplifiedPrediction(equipment: Equipment): void {
+    // Simplified fallback when ML service is unavailable
+    console.log(`Using simplified prediction for ${equipment.name}`);
+    const maintenanceScore = (
+      (equipment.daysSinceMaintenance / 200) * 0.4 +
+      (equipment.totalUsageHours / 500) * 0.4 +
+      (equipment.procedureCount / 100) * 0.2
+    );
+    
+    equipment.needsMaintenance = maintenanceScore > 0.5;
+    equipment.confidence = equipment.needsMaintenance 
+      ? 0.5 + (maintenanceScore - 0.5) * 0.8 // Scale to 0.5-0.98 range for maintenance needed
+      : 0.5 - (0.5 - maintenanceScore) * 0.8; // Scale to 0.02-0.5 range for good condition
+      
+    // Round to 2 decimal places
+    equipment.confidence = Math.round(equipment.confidence * 100) / 100;
+    
+    // Count equipment by maintenance status
+    if (equipment.needsMaintenance) {
+      this.needMaintenanceCount++;
+    } else {
+      this.goodConditionCount++;
     }
   }
   

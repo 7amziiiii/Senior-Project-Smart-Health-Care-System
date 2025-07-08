@@ -51,7 +51,7 @@ export class EquipmentService {
    * Get all large equipment
    */
   getLargeEquipment(): Observable<LargeEquipment[]> {
-    return this.http.get<LargeEquipment[]>(`${this.equipmentRequestsUrl}/large-equipment/`)
+    return this.http.get<LargeEquipment[]>(`${this.largeEquipmentUrl}/`)
       .pipe(
         map(equipment => equipment.map(item => ({
           ...item,
