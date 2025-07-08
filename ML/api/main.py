@@ -82,22 +82,19 @@ def predict(request: PredictionRequest):
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     # Extract request data and add missing features with default values
-    data = request.dict()
+    data = request.model_dump()
     
-    # Create a mapping from frontend field names to model's expected field names
-    # The key issue is total_usage_hours in frontend maps to hours_used_total in model
+    # Map frontend field names to the exact feature names used during model training
+    # According to error: model was trained with days_since_maintenance, total_usage_hours, avg_daily_usage, procedure_count
     mapped_data = {
-        # Map the fields that exist in frontend request to model's expected field names
+        # Use exactly the same feature names as used during training
         'days_since_maintenance': data.get('days_since_maintenance', 0),
-        'hours_used_total': data.get('total_usage_hours', 0),  # Map total_usage_hours -> hours_used_total
-        
-        # Add default values for any other features the model expects but frontend doesn't send
-        'vibration_level': 1.0,  # Default value
-        'temperature': 25.0,     # Default value
-        'pressure_variance': 0.5, # Default value
-        'error_count_last_month': 0,  # Default value
-        'age_years': 2.0         # Default value
+        'total_usage_hours': data.get('total_usage_hours', 0),  # Keep the original name
+        'avg_daily_usage': data.get('avg_daily_usage', 0),      # Required by model
+        'procedure_count': data.get('procedure_count', 0)       # Required by model
     }
+    
+    print(f"Prediction data: {mapped_data}")
     
     # Convert to dataframe with all required features
     df = pd.DataFrame({k: [v] for k, v in mapped_data.items()})
@@ -105,7 +102,17 @@ def predict(request: PredictionRequest):
     # Make prediction
     try:
         prediction = model.predict(df)[0]
-        probability = model.predict_proba(df)[0][1]  # Probability of positive class
+        
+        # Handle different predict_proba output formats safely
+        probabilities = model.predict_proba(df)[0]
+        print(f"Prediction: {prediction}, Probabilities: {probabilities}")
+        
+        # If binary classification (2 classes), get probability of positive class (index 1)
+        # Otherwise, use the first probability or the probability corresponding to the prediction
+        if len(probabilities) > 1:
+            probability = float(probabilities[1])  # Probability of positive class (index 1)
+        else:
+            probability = float(probabilities[0])  # Use the only probability available
         
         return {
             "equipment_id": request.equipment_id,
