@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, catchError, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, catchError, map, tap, throwError } from 'rxjs';
 import { LargeEquipment, EquipmentRequest, SurgeryEquipment } from '../models/large-equipment.model';
 import { environment } from '../../environments/environment';
 
@@ -51,7 +51,7 @@ export class EquipmentService {
    * Get all large equipment
    */
   getLargeEquipment(): Observable<LargeEquipment[]> {
-    return this.http.get<LargeEquipment[]>(`${this.equipmentRequestsUrl}/large-equipment/`)
+    return this.http.get<LargeEquipment[]>(`${this.largeEquipmentUrl}/`)
       .pipe(
         map(equipment => equipment.map(item => ({
           ...item,
@@ -371,6 +371,55 @@ export class EquipmentService {
           unexpected_equipment: [], 
           missing_equipment: [] 
         });
+      })
+    );
+  }
+  
+  /**
+   * Get consolidated equipment overview for the dashboard
+   * @returns Observable with equipment overview data
+   */
+  getEquipmentOverview(): Observable<any[]> {
+    const overviewUrl = `${this.equipmentUrl}/overview/`;
+    console.log('Calling equipment overview endpoint:', overviewUrl);
+    
+    return this.http.get<any[]>(overviewUrl).pipe(
+      tap(overview => {
+        console.log('Equipment overview loaded:', overview);
+        console.log('Number of equipment items returned:', Array.isArray(overview) ? overview.length : 'Not an array');
+        if (Array.isArray(overview) && overview.length === 0) {
+          console.warn('Equipment overview returned empty array from backend');
+        }
+      }),
+      catchError(error => {
+        console.error('Error loading equipment overview:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+        if (error.error) {
+          console.error('Server error details:', error.error);
+        }
+        return of([]);
+      })
+    );
+  }
+  
+  /**
+   * Update notes for a specific piece of equipment
+   * @param equipmentId ID of the equipment to update
+   * @param notes New notes to save
+   * @returns Observable with update response
+   */
+  updateEquipmentNotes(equipmentId: number, notes: string): Observable<any> {
+    const url = `${this.equipmentUrl}/${equipmentId}/update-notes/`;
+    console.log(`Updating notes for equipment ${equipmentId}:`, notes);
+    
+    return this.http.post<any>(url, { notes }).pipe(
+      tap(response => {
+        console.log('Equipment notes updated:', response);
+      }),
+      catchError(error => {
+        console.error('Error updating equipment notes:', error);
+        return throwError(() => new Error(`Failed to update equipment notes: ${error.message}`));
       })
     );
   }

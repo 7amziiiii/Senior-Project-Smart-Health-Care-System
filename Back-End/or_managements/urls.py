@@ -43,7 +43,7 @@ from .views.instruments.instrument_views import (
 from .views.equipment_request_views import (
     EquipmentRequestViewSet, available_equipment,
     pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats,
-    operation_session_equipment
+    operation_session_equipment, equipment_overview, update_equipment_notes
 )
 from .views.equipment_requests.room_scan_view import scan_room_for_equipment
 from .views.large_equipment.large_equipment_views import (
@@ -134,6 +134,8 @@ urlpatterns = [
     path('equipment/in-maintenance/', equipment_in_maintenance, name='equipment-in-maintenance'),
     path('equipment/usage-stats/', equipment_usage_stats, name='equipment-usage-stats'),
     path('equipment/scan-room/', scan_room_for_equipment, name='scan-room-for-equipment'),
+    path('equipment/overview/', equipment_overview, name='equipment-overview'),
+    path('equipment/<int:equipment_id>/update-notes/', update_equipment_notes, name='update-equipment-notes'),
     
     # Operation Session Equipment
     path('operation-sessions/<int:session_id>/equipment/', operation_session_equipment, name='operation-session-equipment'),

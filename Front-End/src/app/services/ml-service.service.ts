@@ -21,8 +21,7 @@ export interface PredictionRequest {
   providedIn: 'root'
 })
 export class MlService {
-  // For now, hardcode the ML API URL until we add it to environment
-  private mlApiUrl = 'http://localhost:8000';
+  private mlApiUrl = 'http://localhost:8001';
 
   constructor(private http: HttpClient) { }
 

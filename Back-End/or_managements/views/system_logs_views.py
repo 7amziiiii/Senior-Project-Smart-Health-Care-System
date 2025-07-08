@@ -65,35 +65,72 @@ class CombinedSystemLogsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated | IsAdmin]
     
     def list(self, request, *args, **kwargs):
-        # Get logs from each source
-        verification_logs = VerificationSession.objects.all()
-        outbound_logs = OutboundTracking.objects.all()
-        equipment_logs = EquipmentRequest.objects.all()
-        
-        # Serialize each type of log
-        verification_serializer = VerificationLogSerializer(verification_logs, many=True)
-        outbound_serializer = OutboundTrackingLogSerializer(outbound_logs, many=True)
-        equipment_serializer = EquipmentRequestLogSerializer(equipment_logs, many=True)
-        
-        # Combine all logs
-        all_logs = (
-            verification_serializer.data + 
-            outbound_serializer.data + 
-            equipment_serializer.data
-        )
-        
-        # Ensure all timestamps are strings before sorting
-        for log in all_logs:
-            # Convert datetime objects or integers to strings if needed
-            if not isinstance(log['timestamp'], str):
-                if hasattr(log['timestamp'], 'isoformat'):
-                    # Handle datetime objects
-                    log['timestamp'] = log['timestamp'].isoformat()
-                else:
-                    # Handle integers or other types
-                    log['timestamp'] = str(log['timestamp'])
-        
-        # Sort combined logs by timestamp (descending)
-        sorted_logs = sorted(all_logs, key=lambda x: x['timestamp'], reverse=True)
-        
-        return Response(sorted_logs)
+        try:
+            # Get logs from each source
+            verification_logs = VerificationSession.objects.all()
+            outbound_logs = OutboundTracking.objects.all()
+            equipment_logs = EquipmentRequest.objects.all()
+            
+            # Serialize each type of log
+            verification_serializer = VerificationLogSerializer(verification_logs, many=True)
+            outbound_serializer = OutboundTrackingLogSerializer(outbound_logs, many=True)
+            equipment_serializer = EquipmentRequestLogSerializer(equipment_logs, many=True)
+            
+            # Debug log data shapes
+            print(f"Verification logs: {len(verification_serializer.data)}")
+            print(f"Outbound logs: {len(outbound_serializer.data)}")
+            print(f"Equipment logs: {len(equipment_serializer.data)}")
+            
+            if verification_serializer.data:
+                print(f"Sample verification log timestamp: {verification_serializer.data[0].get('timestamp')}")
+            if outbound_serializer.data:
+                print(f"Sample outbound log timestamp: {outbound_serializer.data[0].get('timestamp')}")
+            if equipment_serializer.data:
+                print(f"Sample equipment log timestamp: {equipment_serializer.data[0].get('timestamp')}")
+            
+            # Combine all logs
+            all_logs = (
+                list(verification_serializer.data) + 
+                list(outbound_serializer.data) + 
+                list(equipment_serializer.data)
+            )
+            
+            # Ensure all timestamps are strings and present before sorting
+            for i, log in enumerate(all_logs):
+                # Skip entries without timestamps
+                if 'timestamp' not in log or log['timestamp'] is None:
+                    log['timestamp'] = '1970-01-01T00:00:00Z'  # Default timestamp for sorting
+                    print(f"Missing timestamp in log {i}: {log}")
+                    continue
+                    
+                # Convert datetime objects or integers to strings if needed
+                if not isinstance(log['timestamp'], str):
+                    try:
+                        if hasattr(log['timestamp'], 'isoformat'):
+                            # Handle datetime objects
+                            log['timestamp'] = log['timestamp'].isoformat()
+                        else:
+                            # Handle integers or other types
+                            log['timestamp'] = str(log['timestamp'])
+                    except Exception as e:
+                        print(f"Error converting timestamp in log {i}: {e}")
+                        log['timestamp'] = '1970-01-01T00:00:00Z'  # Default timestamp for sorting
+            
+            # Sort combined logs by timestamp (descending)
+            try:
+                sorted_logs = sorted(all_logs, key=lambda x: x.get('timestamp', ''), reverse=True)
+                return Response(sorted_logs)
+            except Exception as e:
+                print(f"Error sorting logs: {e}")
+                print(f"Problem logs: {[log.get('timestamp') for log in all_logs if not isinstance(log.get('timestamp'), str)]}")
+                # Return unsorted logs as fallback
+                return Response(all_logs)
+                
+        except Exception as e:
+            import traceback
+            print(f"Error in combined logs view: {e}")
+            print(traceback.format_exc())
+            return Response(
+                {"error": f"An error occurred while processing logs: {str(e)}"},
+                status=500
+            )
