@@ -1,226 +1,183 @@
-.container {
-  font-family: 'Arial', sans-serif;
+.feature-container {
+  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-  background-color: #f8f9fa;
-  min-height: calc(100vh - 80px);
-}
-
-.outbound-tracking-container {
-  font-family: 'Arial', sans-serif;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
   background-color: #ffffff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  min-height: calc(100vh - 3rem);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  font-family: 'Roboto', Arial, sans-serif;
+}
+
+.feature-content {
+  width: 100%;
+}
+
+.surgery-compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e8edf5;
   
-  // Header Styling
-  header {
-    background-color: #ffffff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-    
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 1.5rem;
-      
-      .header-left {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        
-        .back-button {
-          background-color: transparent;
-          border: none;
-          color: #3a86ff;
-          padding: 0.5rem;
-          font-size: 0.9rem;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: color 0.2s;
-          
-          &:hover {
-            color: #1a66ff;
-          }
-          
-          i {
-            font-size: 0.9rem;
-          }
-        }
-        
-        h1 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 0;
-          color: #333;
-        }
-      }
+  .surgery-title-area {
+    h3 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: #2a3eb1;
+      font-weight: 600;
     }
-  }
-  
-  // Breadcrumb Navigation Styling
-  .status-bar {
-    background-color: #f5f7fa;
-    border-bottom: 1px solid #e0e5ee;
-    padding: 0.6rem 1.5rem;
     
-    .breadcrumbs {
-      max-width: 1200px;
-      margin: 0 auto;
+    .surgery-meta {
+      display: block;
+      margin-top: 0.5rem;
+      color: #6b7280;
       font-size: 0.9rem;
-      color: #666;
-      display: flex;
-      align-items: center;
-      
-      span {
-        &:not(.current) {
-          cursor: pointer;
-          color: #3a86ff;
-          position: relative;
-          
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-        
-        &.current {
-          font-weight: 500;
-          color: #333;
-        }
-      }
     }
   }
   
-  .loading-container {
+  .header-actions {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 40px 0;
+    gap: 1rem;
     
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      border-radius: 50%;
-      border-top: 4px solid #2a3eb1;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
+    .last-scan {
+      font-size: 0.9rem;
+      color: #6b7280;
     }
     
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .scan-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+      
+      i {
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+      }
+      
+      &:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+      
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
     }
   }
 }
-
-.surgeries-list {
+  
+.loading-container {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
   
-  .list-section {
-    h2 {
-      font-size: 20px;
-      color: #424242;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .no-data {
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      border: 1px solid #e0e0e0;
-      
-      p {
-        color: #757575;
-        margin: 0;
-      }
-    }
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #2a3eb1;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
   }
   
-  .surgery-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    border: 1px solid #e0e0e0;
-    transition: transform 0.2s, box-shadow 0.2s;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-    }
-    
-    h3 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #2a3eb1;
-      font-size: 18px;
-    }
-    
-    .surgery-details {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px;
-      
-      p {
-        margin: 5px 0;
-        font-size: 14px;
-      }
-      
-      .status {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 13px;
-        font-weight: 500;
-        text-align: center;
-        margin-top: 10px;
-        
-        &.in-progress {
-          background-color: #fff8e1;
-          color: #f57f17;
-        }
-        
-        &.completed {
-          background-color: #e8f5e9;
-          color: #2e7d32;
-        }
-      }
-    }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 }
 
-.outbound-tracking {
-  // Tab navigation styles
-  .tab-navigation {
+.no-surgery-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.verification-container {
+  padding: 0.5rem 0;
+}
+
+.status-ongoing {
+  color: #ec4899;
+  font-weight: 500;
+}
+
+.status-completed {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #6b7280;
+  
+  i {
+    margin-right: 0.5rem;
+    color: #2a3eb1;
+  }
+}
+
+.instrument-tabs {
+  margin-top: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  
+  .tab-headers {
     display: flex;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e5e7eb;
     
-    .tab-button {
-      background: none;
-      border: none;
-      padding: 12px 25px;
-      font-size: 15px;
+    .tab-header {
+      padding: 1rem 1.5rem;
+      font-size: 0.9rem;
       font-weight: 500;
-      color: #757575;
+      color: #6b7280;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       position: relative;
-      transition: all 0.2s ease;
+      transition: color 0.2s;
+      
+      i {
+        font-size: 1rem;
+      }
+      
+      .count-badge {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #e5e7eb;
+        color: #6b7280;
+        border-radius: 9999px;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        padding: 0 0.4rem;
+        font-size: 0.75rem;
+        transition: all 0.2s;
+      }
       
       &:hover {
         color: #2a3eb1;
@@ -228,6 +185,7 @@
       
       &.active {
         color: #2a3eb1;
+        font-weight: 600;
         
         &:after {
           content: '';
@@ -235,71 +193,137 @@
           bottom: -1px;
           left: 0;
           width: 100%;
-          height: 3px;
+          height: 2px;
           background-color: #2a3eb1;
-          border-radius: 3px 3px 0 0;
         }
-      }
-      
-      .count-badge {
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-        background-color: #e0e0e0;
-        color: #757575;
-        border-radius: 12px;
-        min-width: 20px;
-        height: 20px;
-        padding: 0 6px;
-        font-size: 12px;
-        margin-left: 8px;
-        transition: all 0.2s ease;
-      }
-      
-      &.active .count-badge {
-        background-color: #bbdefb;
-        color: #2a3eb1;
+        
+        .count-badge {
+          background-color: #dbeafe;
+          color: #2a3eb1;
+        }
       }
     }
   }
   
   .tab-content {
-    margin-bottom: 20px;
-    
-    .tab-pane {
-      display: none;
-      
-      &.active {
-        display: block;
-        animation: fadeIn 0.3s ease-in-out;
-      }
-    }
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  .status-card {
+    padding: 1.5rem;
     background-color: white;
-    border-radius: 8px;
-    padding: 25px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.alert-panel {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  
+  .alert-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #d97706;
+    font-weight: 600;
     
-    h2 {
-      margin-top: 0;
-      color: #2a3eb1;
-      font-size: 20px;
-      margin-bottom: 15px;
-    }
-    
-    .description {
-      margin-bottom: 25px;
-      color: #616161;
-      line-height: 1.5;
+    i {
+      font-size: 1rem;
     }
   }
+  
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #92400e;
+  }
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2a3eb1;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.section-description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.instruments-table-container {
+  margin-bottom: 1.5rem;
+  
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 1rem 0 0.5rem 0;
+  }
+}
+  
+.instruments-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  
+  th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #374151;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    color: #4b5563;
+    vertical-align: middle;
+  }
+  
+  .quantity-cell {
+    font-weight: 500;
+    text-align: center;
+  }
+  
+  .warning-row {
+    background-color: #fff7ed;
+    
+    &:hover {
+      background-color: #ffedd5;
+    }
+  }
+  
+  .success-row {
+    background-color: #f0fdf4;
+    
+    &:hover {
+      background-color: #dcfce7;
+    }
+  }
+  
+  .extra-row {
+    background-color: #f3f4f6;
+    
+    &:hover {
+      background-color: #e5e7eb;
+    }
+  }
+  
+  .no-data-cell {
+    text-align: center;
+    padding: 1.5rem;
+    color: #6b7280;
+    
+    i {
+      margin-right: 0.5rem;
+      color: #9ca3af;
+    }
+  }
+}
   
   .scan-controls {
     margin-bottom: 20px;
@@ -332,71 +356,71 @@
   }
   
   // Warning panel - always visible with yellow background
-  .warning-panel {
-    background-color: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 24px;
-    margin: 0 0 24px 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    
-    .warning-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      
-      i {
-        color: #2a3eb1; // Brand color icon
-        font-size: 24px;
-        margin-right: 12px;
-      }
-      
-      h3 {
-        margin: 0;
-        color: #2a3eb1;
-        font-size: 18px;
-        font-weight: 600;
-      }
-    }
-    
-    p {
-      color: #424242;
-      margin-bottom: 20px;
-      line-height: 1.5;
-    }
-    
-    .scan-timestamp {
-      font-size: 13px;
-      color: #757575;
-      margin-top: 20px;
-      text-align: right;
-      font-style: italic;
-    }
-    
-    // Section heading styles
-    h4 {
-      color: #2a3eb1;
-      font-size: 16px;
-      font-weight: 600;
-      margin: 30px 0 15px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .items-table-container {
-      margin-bottom: 30px;
-    }
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  
+  &.warning {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #ffedd5;
   }
   
-  .scanning-status {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 0;
+  &.success {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #d1fae5;
   }
   
-  // Results table styles
-  .results-table {
+  i {
+    margin-right: 0.3rem;
+    font-size: 0.8rem;
+  }
+}
+
+.id-chip {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  margin-right: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.empty-message {
+  padding: 2rem;
+  text-align: center;
+  color: #10b981;
+  background-color: #ecfdf5;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  
+  i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    margin: 0;
+    font-weight: 500;
+  }
+}
+  
+.scanning-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+}
+  
+// Results table styles
+.results-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
@@ -449,20 +473,19 @@
     }
   }
   
-  .section {
-    margin-bottom: 25px;
+.section {
+  margin-bottom: 25px;
+  
+  h4 {
+    color: #5d4037;
+    font-size: 16px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
     
-    h4 {
+    i {
+      margin-right: 8px;
       color: #5d4037;
-      font-size: 16px;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      
-      i {
-        margin-right: 8px;
-        color: #5d4037;
-      }
     }
   }
 }
@@ -619,14 +642,67 @@ table {
   }
 }
 
-// Action buttons
-.action-footer {
-  margin-top: 30px;
-  padding-top: 15px;
-  border-top: 1px solid #eee;
+// Action bar with buttons
+.action-bar {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: flex-end;
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .action-btn {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    
+    i {
+      margin-right: 0.5rem;
+    }
+    
+    &.primary {
+      background-color: #2a3eb1;
+      color: white;
+      border: none;
+      box-shadow: 0 2px 5px rgba(42, 62, 177, 0.2);
+      
+      &:hover {
+        background-color: #1c2e85;
+        box-shadow: 0 3px 7px rgba(42, 62, 177, 0.3);
+      }
+      
+      &:disabled {
+        background-color: #c0c0c0;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+    }
+    
+    &.secondary {
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
+      
+      &:hover {
+        background-color: #e5e7eb;
+        color: #374151;
+      }
+      
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
 }
 
 .scan-timestamp {
@@ -635,21 +711,13 @@ table {
   font-size: 13px;
 }
 
-// Status badges
-.ongoing-status {
-  background-color: #fff8e1;
-  color: #f57f17;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+// Status styling (matched to Instruments Verification)
+.status-ongoing {
+  color: #ec4899;
   font-weight: 500;
 }
 
-.completed-status {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.status-completed {
+  color: #10b981;
   font-weight: 500;
 }
