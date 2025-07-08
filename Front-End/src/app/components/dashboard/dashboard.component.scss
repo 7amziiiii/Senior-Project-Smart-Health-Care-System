@@ -311,13 +311,31 @@ $border-light: #e9ecef;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    padding: 1rem 1.2rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     
     .view-title {
       h3 {
         margin: 0;
         color: #0a2344;
-        font-size: 1.4rem;
-        font-weight: 500;
+        font-size: 1.6rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        position: relative;
+        padding-bottom: 4px;
+        
+        &:after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 40px;
+          height: 3px;
+          background-color: #3c7ab7;
+          border-radius: 2px;
+        }
       }
     }
     
@@ -326,27 +344,33 @@ $border-light: #e9ecef;
         position: relative;
         
         input {
-          padding: 0.5rem 2.2rem 0.5rem 0.8rem;
-          border-radius: 4px;
+          padding: 0.75rem 2.5rem 0.75rem 1rem;
+          border-radius: 6px;
           border: 1px solid #ced4da;
-          width: 220px;
-          font-size: 0.875rem;
+          width: 250px;
+          font-size: 0.95rem;
           background-color: #fff;
           transition: all 0.2s;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
           
           &:focus {
             outline: none;
             border-color: #4ca8ff;
-            box-shadow: 0 0 0 2px rgba(76, 168, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(76, 168, 255, 0.2);
+          }
+          
+          &::placeholder {
+            color: #98a6ad;
+            font-style: italic;
           }
         }
         
         i {
           position: absolute;
-          right: 0.8rem;
+          right: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #6c757d;
+          color: #4ca8ff;
           pointer-events: none;
         }
       }
@@ -403,19 +427,25 @@ $border-light: #e9ecef;
       
       .operation-row {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 0.8rem 1rem;
-        border-bottom: 1px solid #e9ecef;
-        transition: background-color 0.15s;
+        padding: 1.25rem;
+        background-color: #fff;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 1rem;
         cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        
+        &:hover {
+          background-color: #f8f9fa;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: #d1d9e2;
+        }
         
         &:last-child {
           border-bottom: none;
-        }
-        
-        &:hover {
-          background-color: #f1f4f8;
         }
         
         &.active {
@@ -427,29 +457,34 @@ $border-light: #e9ecef;
         }
         
         .operation-info {
-          flex: 1;
+          flex-grow: 1;
           
           .operation-name {
-            font-weight: 500;
-            margin-bottom: 0.3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
             color: #212529;
-            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.01em;
           }
           
           .operation-details {
             display: flex;
-            gap: 1.2rem;
+            align-items: center;
+            gap: 1.25rem;
+            color: #6c757d;
+            font-size: 0.9rem;
             
             .detail {
-              color: #6c757d;
-              font-size: 0.8rem;
               display: flex;
               align-items: center;
+              background-color: #f8f9fa;
+              padding: 0.35rem 0.75rem;
+              border-radius: 4px;
               
               i {
-                margin-right: 0.4rem;
+                margin-right: 0.5rem;
                 font-size: 0.85rem;
-                width: 14px;
+                color: #3c7ab7;
               }
             }
           }
