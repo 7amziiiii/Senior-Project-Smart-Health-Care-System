@@ -1,46 +1,78 @@
-<div class="login-container">
-  <div class="login-card">
-    <h2>Login</h2>
+<div class="login-wrapper">
+  <div class="login-container">
+    <div class="brand-section">
+      <div class="hospital-logo">
+        <i class="fas fa-hospital"></i>
+      </div>
+      <h1>OR Management System</h1>
+      <p class="tagline">Operating Room Staff Portal</p>
+    </div>
     
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input 
-          type="text" 
-          id="username" 
-          formControlName="username" 
-          placeholder="Enter username"
-        >
-        <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="error">
-          Username is required
+    <div class="auth-section">
+      <h2>Welcome Back</h2>
+      <p class="subtitle">Sign in to continue to your dashboard</p>
+      
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="floating-input">
+          <input 
+            type="text" 
+            id="username" 
+            formControlName="username" 
+            placeholder=" "
+            autocomplete="username"
+          >
+          <label for="username">Username</label>
+          <i class="fas fa-user-md"></i>
+          <div *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched" class="error">
+            <i class="fas fa-exclamation-circle"></i> Username is required
+          </div>
         </div>
-      </div>
-      
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          formControlName="password" 
-          placeholder="Enter password"
-        >
-        <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error">
-          <div *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</div>
-          <div *ngIf="loginForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</div>
+        
+        <div class="floating-input">
+          <input 
+            type="password" 
+            id="password" 
+            formControlName="password" 
+            placeholder=" "
+            autocomplete="current-password"
+          >
+          <label for="password">Password</label>
+          <i class="fas fa-lock"></i>
+          <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched" class="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+          </div>
         </div>
-      </div>
+        
+        <div class="options-row">
+          <div class="remember-me">
+            <input type="checkbox" id="remember">
+            <label for="remember">Remember me</label>
+          </div>
+          <div class="forgot-link">
+            <a href="javascript:void(0)">Forgot password?</a>
+          </div>
+        </div>
+        
+        <div *ngIf="errorMessage" class="alert-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ errorMessage }}
+        </div>
+        
+        <button type="submit" [disabled]="loginForm.invalid || loading">
+          <span *ngIf="!loading">Sign In <i class="fas fa-arrow-right"></i></span>
+          <span *ngIf="loading"><i class="fas fa-circle-notch fa-spin"></i> Authenticating</span>
+        </button>
+      </form>
       
-      <div *ngIf="errorMessage" class="alert-error">
-        {{ errorMessage }}
+      <div class="register-prompt">
+        <p>Don't have an account? <a routerLink="/register">Register now</a></p>
       </div>
-      
-      <button type="submit" [disabled]="loginForm.invalid || loading">
-        {{ loading ? 'Logging in...' : 'Login' }}
-      </button>
-      
-      <div class="register-link">
-        Don't have an account? <a routerLink="/register">Register here</a>
-      </div>
-    </form>
+    </div>
+  </div>
+  
+  <div class="system-footer">
+    <p>© 2025 Hospital OR Management System | <a href="javascript:void(0)">Privacy Policy</a> | <a href="javascript:void(0)">Terms of Use</a></p>
   </div>
 </div>
