@@ -5,6 +5,7 @@ import { MlService, PredictionRequest } from '../../services/ml-service.service'
 import { EquipmentService } from '../../services/equipment.service';
 import { EquipmentRequest } from '../../models/large-equipment.model';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 
 interface Equipment {
   id: number;
@@ -134,7 +135,8 @@ export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private mlService: MlService,
-    private equipmentService: EquipmentService
+    private equipmentService: EquipmentService,
+    private authService: AuthService
   ) { }
   
   ngOnInit(): void {
@@ -182,7 +184,13 @@ export class PredictiveMaintenanceComponent implements OnInit, OnDestroy {
   }
   
   goBack() {
-    this.router.navigate(['/dashboard']);
+    if (this.authService.isAdmin()) {
+      this.router.navigate(['/admin']);
+    } else if (this.authService.isMaintenance()) {
+      this.router.navigate(['/maintenance']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
   
   updateMaintenanceCounts(): void {

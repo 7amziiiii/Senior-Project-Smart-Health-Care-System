@@ -1,20 +1,29 @@
 <div class="maintenance-dashboard">
-  <!-- Top Navigation -->
-  <nav class="main-nav">
-    <div class="nav-content">
-      <div class="nav-brand">
-        <i class="fas fa-hospital-alt"></i>
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <button *ngIf="isAdmin" class="back-button" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
         <h1>Maintenance Dashboard</h1>
       </div>
-      <div class="nav-actions">
+      <div class="header-right">
         <span class="user-name">{{ username }}</span>
-        <button class="btn-logout" (click)="logout()">
+        <button class="logout-button" (click)="logout()">
           <i class="fas fa-sign-out-alt"></i>
           Logout
         </button>
       </div>
     </div>
-  </nav>
+  </header>
+  
+  <!-- Breadcrumb Navigation -->
+  <div class="status-bar">
+    <div class="breadcrumbs">
+      <span class="current">Maintenance Dashboard</span>
+    </div>
+  </div>
 
   <!-- Main Content -->
   <div class="dashboard-content">

@@ -1,9 +1,24 @@
-<div>
-  <h1>Instruments Outbound Tracking</h1>
-  
-  <button *ngIf="selectedSurgery" class="back-btn" (click)="goBack()">
-    <i class="fas fa-arrow-left"></i> Back to Surgeries
-  </button>
+<div class="outbound-tracking-container">
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <button class="back-button" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+        <h1>Instruments Outbound Tracking</h1>
+      </div>
+    </div>
+    
+    <!-- Breadcrumb Navigation -->
+    <div class="status-bar">
+      <div class="breadcrumbs">
+        <span (click)="goBack()">Dashboard</span> &gt; 
+        <span class="current">Outbound Tracking</span>
+        <span *ngIf="selectedSurgery">&gt; {{selectedSurgery.name}}</span>
+      </div>
+    </div>
+  </header>
   
   <!-- Loading state -->
   <div *ngIf="loading" class="loading-container">
@@ -11,32 +26,14 @@
     <p>Loading surgeries...</p>
   </div>
 
-  <!-- Surgery selection screen -->
-  <div *ngIf="!loading && !selectedSurgery" class="surgery-selection">
-    <h3>Select a Surgery</h3>
-    <div class="surgery-list">
-      <!-- Ongoing Surgeries -->
-      <div *ngFor="let surgery of surgeries" 
-          class="surgery-card"
-          [class.ongoing]="isSurgeryOngoing(surgery)"
-          [class.completed]="isSurgeryCompleted(surgery)"
-          (click)="selectSurgery(surgery)">
-        <h4>{{surgery.name}}</h4>
-        <div class="surgery-details">
-          <p><strong>Room:</strong> {{surgery.roomNumber}}</p>
-          <p><strong>Time:</strong> {{surgery.scheduledTime | date:'shortTime'}}</p>
-          <p><strong>Status:</strong> 
-            <span [ngClass]="{'ongoing-status': isSurgeryOngoing(surgery), 'completed-status': isSurgeryCompleted(surgery)}">
-              {{isSurgeryOngoing(surgery) ? 'In Progress' : 'Completed'}}
-            </span>
-          </p>
-        </div>
-      </div>
-      
-      <!-- No surgeries message -->
-      <div *ngIf="surgeries.length === 0" class="no-data">
-        <p>No surgeries available</p>
-      </div>
+  <!-- If no surgery is selected, show a loading state -->
+  <div *ngIf="!loading && !selectedSurgery" class="no-surgery-selected">
+    <p>No surgery selected. Returning to dashboard...</p>
+    <div class="spinner"></div>
+    
+    <!-- No surgeries message -->
+    <div *ngIf="surgeries.length === 0" class="no-data">
+      <p>No surgeries available</p>
     </div>
   </div>
 

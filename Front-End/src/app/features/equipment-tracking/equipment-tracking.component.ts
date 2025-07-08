@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, NavigationExtras } from '@angular/router';
 import { EquipmentService } from '../../services/equipment.service';
 import { SurgeryDataService } from '../../services/surgery-data.service';
 import { LargeEquipment, SurgeryEquipment } from '../../models/large-equipment.model';
@@ -9,7 +9,7 @@ import { LargeEquipment, SurgeryEquipment } from '../../models/large-equipment.m
 @Component({
   selector: 'app-equipment-tracking',
   standalone: true,
-  imports: [RouterLink, CommonModule],
+  imports: [CommonModule],
   templateUrl: './equipment-tracking.component.html',
   styleUrl: './equipment-tracking.component.scss'
 })
@@ -88,6 +88,15 @@ export class EquipmentTrackingComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/dashboard']);
+    // Always go back to the dashboard with surgery and features context preserved
+    const navigationExtras: NavigationExtras = {
+      queryParams: { 
+        showFeatures: 'true',
+        keepSurgeryContext: 'true'
+      }
+    };
+    
+    // Navigate back to dashboard with the selected surgery preserved
+    this.router.navigate(['/dashboard'], navigationExtras);
   }
 }
