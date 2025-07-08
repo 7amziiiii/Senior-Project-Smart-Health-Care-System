@@ -9,12 +9,13 @@ import { RFIDTagService, RFIDTag, Asset } from '../../services/rfid-tag.service'
 import { InstrumentService, Instrument } from '../../services/instrument.service';
 import { TrayService } from '../../services/tray.service';
 import { HttpClientModule } from '@angular/common/http';
+import { SystemLogsComponent } from '../system-logs/system-logs.component';
 // Using alerts for notifications
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, RouterModule, FormsModule, HttpClientModule, SystemLogsComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss']
 })
@@ -263,7 +264,8 @@ export class AdminDashboardComponent implements OnInit {
         this.showInstruments = true;
         break;
       case 'logs':
-        this.showLogs = true;
+        // Navigate to the standalone System Logs page
+        this.router.navigate(['/system-logs']);
         break;
     }
   }
