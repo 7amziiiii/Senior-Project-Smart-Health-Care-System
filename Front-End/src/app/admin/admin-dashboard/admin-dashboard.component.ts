@@ -182,17 +182,19 @@ export class AdminDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Initialize dashboard based on saved state or default view
-    this.showDashboard = true;
+    console.log('Admin dashboard initializing...');
+    
+    // Reset view state to show the main menu by default
+    this.showDashboard = false;
+    this.showApprovalPanel = false;
+    this.showInstruments = false;
+    this.showLogs = false;
     
     // Load any necessary data for the dashboard
-    // For example, fetch pending users
     this.loadPendingUsers();
-    
-    // Load available trays for instrument registration
     this.loadAvailableTrays();
     
-    console.log('Admin dashboard initialized');
+    console.log('Admin dashboard initialized with main menu view');
   }
   
   /**
@@ -245,11 +247,9 @@ export class AdminDashboardComponent implements OnInit {
         this.loadPendingUsers();
         break;
       case 'dashboard':
-        this.showDashboard = true;
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 1000);
+        // Redirect to the OR dashboard component
+        console.log('Navigating to OR dashboard');
+        this.router.navigate(['/dashboard']);
         break;
       case 'maintenance':
         // Redirect to maintenance dashboard directly
