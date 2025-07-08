@@ -114,7 +114,13 @@
         </div>
       </div>
       
-      <div class="tools-panel">
+      <!-- Equipment Request Form - shown when selected -->
+      <app-equipment-request *ngIf="selectedFeature === 'equipment-request'" [surgery]="selectedSurgery"></app-equipment-request>
+
+
+
+      <!-- Tools Panel - shown when no specific feature is selected -->
+      <div class="tools-panel" *ngIf="!selectedFeature">
         <!-- Instruments Verification Tool -->
         <div class="tool-item" (click)="navigateToFeature('instruments-verification')">
           <div class="tool-icon">
@@ -138,6 +144,16 @@
           </div>
           <div class="tool-label">Equipment Tracking</div>
         </div>
+        
+        <!-- Equipment Request Tool -->
+        <div class="tool-item" (click)="navigateToFeature('equipment-request')">
+          <div class="tool-icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div class="tool-label">Request Equipment</div>
+        </div>
+        
+
         
         <!-- Predictive Maintenance Tool -->
         <div class="tool-item" (click)="navigateToFeature('predictive-maintenance')">

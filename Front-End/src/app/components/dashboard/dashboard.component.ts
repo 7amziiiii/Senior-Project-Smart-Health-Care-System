@@ -6,11 +6,13 @@ import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { SurgeryDataService, Surgery } from '../../services/surgery-data.service';
 import { SurgeryFilterPipe } from '../../pipes/surgery-filter.pipe';
+import { EquipmentRequestComponent } from '../equipment-request/equipment-request.component';
+import { EquipmentService } from '../../services/equipment.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SurgeryFilterPipe],
+  imports: [CommonModule, RouterLink, FormsModule, SurgeryFilterPipe, EquipmentRequestComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -22,11 +24,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showFeatures: boolean = false;
   isAdmin: boolean = false;
   searchTerm: string = '';
+  selectedFeature: string | null = null;
   private subscriptions: Subscription[] = [];
-
+  
   constructor(
     private authService: AuthService,
     private surgeryDataService: SurgeryDataService,
+    private equipmentService: EquipmentService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -97,6 +101,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // If navigating to equipment tracking, include the surgery ID in the route
     if (featurePath === 'equipment-tracking') {
       this.router.navigate([`/${featurePath}/${this.selectedSurgery.id}`]);
+    } else if (featurePath === 'equipment-request') {
+      // For equipment request, we stay on the same page and show the request form
+      this.selectedFeature = 'equipment-request';
     } else {
       this.router.navigate([`/${featurePath}`]);
     }
@@ -111,4 +118,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+  
+
 }

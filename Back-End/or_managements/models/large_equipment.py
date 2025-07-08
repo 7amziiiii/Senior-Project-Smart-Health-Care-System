@@ -5,6 +5,7 @@ class LargeEquipment(models.Model):
     equipment_id = models.CharField(max_length=50, unique=True)
     rfid_tag = models.OneToOneField('RFIDTag', on_delete=models.SET_NULL, null=True)
     equipment_type = models.CharField(max_length=100)  # e.g., "C-Arm", "Microscope"
+    location = models.CharField(max_length=100, null=True, blank=True)  # e.g., "OR Room 3", "Storage B"
     
     status = models.CharField(max_length=50, choices=[
         ('available', 'Available'),

@@ -29,5 +29,5 @@ class LargeEquipmentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'equipment_id', 'rfid_tag',
             'equipment_type', 'status', 'status_display', 'notes',
-            'last_maintenance_date', 'next_maintenance_date'
+            'last_maintenance_date', 'next_maintenance_date', 'location'
         ]

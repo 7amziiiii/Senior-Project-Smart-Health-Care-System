@@ -8,6 +8,7 @@ export interface LargeEquipment {
   last_maintenance_date?: string;
   next_maintenance_date?: string;
   isAvailable?: boolean; // For frontend use
+  location?: string;
 }
 
 export interface EquipmentRequest {
@@ -15,7 +16,8 @@ export interface EquipmentRequest {
   equipment: LargeEquipment;
   operation_session: number;
   requested_by?: number;
-  status: 'requested' | 'in_use' | 'returned' | 'maintenance';
+  status: 'requested' | 'approved' | 'rejected' | 'in_use' | 'returned' | 'maintenance';
+  equipment_status?: string; // Status of the equipment after the request
   check_out_time?: string;
   check_in_time?: string;
   duration_minutes?: number;
@@ -29,4 +31,7 @@ export interface SurgeryEquipment {
   equipment: LargeEquipment;
   isRequired: boolean;
   isAvailable: boolean;
+  isRequested: boolean;
+  requestStatus?: 'requested' | 'approved' | 'rejected' | 'in_use' | 'returned' | 'maintenance';
+  requestId?: number;
 }

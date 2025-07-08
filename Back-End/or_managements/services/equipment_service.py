@@ -21,6 +21,67 @@ class EquipmentService:
     """
     
     @staticmethod
+    def scan_room_for_equipment(room_id, scan_duration=3):
+        """
+        Scan a room for equipment using RFID technology
+        
+        Args:
+            room_id (str): ID or name of the room to scan
+            scan_duration (int): Duration of the scan in seconds
+        
+        Returns:
+            dict: Dictionary with scanned equipment information
+                - equipment_in_room: List of LargeEquipment objects found in the room
+                - unexpected_equipment: Equipment not assigned to this room but found
+                - missing_equipment: Equipment assigned to this room but not found
+        """
+        from ..scripts.test import scan_rfid_tags
+        from ..models.rfid_tag import RFIDTag
+        
+        results = {
+            'equipment_in_room': [],
+            'unexpected_equipment': [],
+            'missing_equipment': []
+        }
+        
+        try:
+            # 1. Perform RFID scan
+            scan_results = scan_rfid_tags('', 0, scan_duration, verbose=True)
+            scanned_tags = scan_results.get('tags', [])
+            
+            # Extract tag IDs from results
+            tag_ids = [tag['epc'] if isinstance(tag, dict) and 'epc' in tag else str(tag) 
+                      for tag in scanned_tags]
+            
+            # 2. Get equipment in this room from database
+            expected_equipment = LargeEquipment.objects.filter(location=room_id)
+            
+            # 3. Get equipment found by RFID
+            found_rfid_tags = RFIDTag.objects.filter(tag_id__in=tag_ids)
+            found_equipment = LargeEquipment.objects.filter(rfid_tag__in=found_rfid_tags)
+            
+            # 4. Categorize equipment
+            for equipment in found_equipment:
+                if equipment.location == room_id:
+                    results['equipment_in_room'].append(equipment)
+                else:
+                    results['unexpected_equipment'].append(equipment)
+            
+            # 5. Identify missing equipment
+            for equipment in expected_equipment:
+                if equipment not in results['equipment_in_room']:
+                    results['missing_equipment'].append(equipment)
+            
+            return results
+        
+        except Exception as e:
+            # Log the error and return empty results
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error scanning room for equipment: {str(e)}")
+            return results
+    
+    @staticmethod
     def get_available_equipment(operation_date=None, operation_type=None):
         """
         Get equipment that is available for a given date and/or operation type
@@ -33,11 +94,11 @@ class EquipmentService:
             QuerySet: Available LargeEquipment objects
         """
         # Start with all equipment
-        available_equipment = LargeEquipment.objects.filter(is_active=True)
+        available_equipment = LargeEquipment.objects.all()
         
-        # Filter out equipment in maintenance
+        # Filter out equipment in maintenance/repair
         available_equipment = available_equipment.exclude(
-            maintenance_status='in_maintenance'
+            status__in=['under_repair', 'scheduled_maintenance']
         )
         
         # If operation date is provided, filter out equipment already scheduled for that date
@@ -53,7 +114,7 @@ class EquipmentService:
             booked_equipment_ids = EquipmentRequest.objects.filter(
                 Q(status__in=['requested', 'in_use']),
                 Q(check_out_time__range=(operation_start_time, operation_end_time)) |
-                Q(operation_session__scheduled_date=operation_date)
+                Q(operation_session__scheduled_time__date=operation_date)
             ).values_list('equipment_id', flat=True).distinct()
             
             # Exclude booked equipment
@@ -94,7 +155,7 @@ class EquipmentService:
                 return (existing_request, "Request already exists")
             
             # Check if equipment is available for this date
-            operation_date = operation_session.scheduled_date
+            operation_date = operation_session.scheduled_time.date()  # Extract date from datetime
             available_equipment = EquipmentService.get_available_equipment(
                 operation_date=operation_date
             )
@@ -138,13 +199,9 @@ class EquipmentService:
             if request.status != 'requested':
                 return (request, f"Request is already {request.get_status_display()}")
             
-            # Update status and checkout time
-            request.status = 'in_use'
+            # Use the new approve method and set checkout time
+            request.approve()
             request.check_out_time = timezone.now()
-            
-            # Add approved_by information if a logging field is available
-            # Currently not in the model, but could be added
-            
             request.save()
             return (request, "Equipment request approved successfully")
             
@@ -169,16 +226,18 @@ class EquipmentService:
         try:
             request = EquipmentRequest.objects.get(id=request_id)
             
-            # Only reject if in 'requested' status
+            # Check if request can be rejected (only 'requested' status)
             if request.status != 'requested':
-                return (request, f"Request is already {request.get_status_display()}")
+                return (request, f"Only 'requested' equipment can be rejected, current status: {request.get_status_display()}")
             
-            # For rejected requests, we'll delete them to keep the system clean
-            # Alternative approach would be to add a 'rejected' status
-            request_copy = request  # Copy for return value
-            request.delete()
+            # Store rejection reason in notes if there is a field for it
+            # For now, we'll just log it
+            print(f"Request {request_id} rejected. Reason: {reason}")
             
-            return (request_copy, "Equipment request rejected successfully")
+            # Mark the request as rejected using our new model method
+            request.reject()
+            
+            return (request, "Equipment request rejected successfully")
             
         except EquipmentRequest.DoesNotExist:
             return (None, "Request not found")
@@ -292,6 +351,41 @@ class EquipmentService:
             return (None, "Request not found")
         except Exception as e:
             return (None, f"Error completing maintenance: {str(e)}")
+    
+    @staticmethod
+    def fulfill_request(request_id):
+        """
+        Fulfill an equipment request (transition from approved to in_use)
+        
+        Args:
+            request_id (int): ID of the request to fulfill
+            
+        Returns:
+            tuple: (EquipmentRequest, str) - The updated request and status message
+        """
+        try:
+            request = EquipmentRequest.objects.get(id=request_id)
+            
+            # Only fulfill if in 'requested' or 'approved' status
+            if request.status not in ['requested', 'approved']:
+                return (request, f"Request cannot be fulfilled, current status: {request.get_status_display()}")
+            
+            # Update request status
+            request.status = 'in_use'
+            request.check_out_time = timezone.now()
+            request.save()
+            
+            # Update equipment status
+            equipment = request.equipment
+            equipment.status = 'in_use'
+            equipment.save()
+            
+            return (request, "Equipment has been fulfilled and checked out successfully")
+            
+        except EquipmentRequest.DoesNotExist:
+            return (None, "Request not found")
+        except Exception as e:
+            return (None, f"Error fulfilling request: {str(e)}")
     
     @staticmethod
     def get_pending_requests():

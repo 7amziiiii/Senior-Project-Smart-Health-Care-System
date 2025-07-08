@@ -9,6 +9,8 @@ class EquipmentRequest(models.Model):
     """
     STATUS_CHOICES = [
         ('requested', 'Requested'),
+        ('approved', 'Approved'),   # Add approved status for maintenance staff approval
+        ('rejected', 'Rejected'),   # Add rejected status for maintenance staff rejection
         ('in_use', 'In Use'),
         ('returned', 'Returned'),
         ('maintenance', 'Maintenance')
@@ -50,6 +52,12 @@ class EquipmentRequest(models.Model):
         """Check out equipment for use in operation"""
         self.status = 'in_use'
         self.check_out_time = timezone.now()
+        
+        # Update equipment status
+        if self.equipment:
+            self.equipment.status = 'in_use'
+            self.equipment.save()
+            
         self.save()
         return self
     
@@ -57,6 +65,12 @@ class EquipmentRequest(models.Model):
         """Check in equipment after operation"""
         self.status = 'returned'
         self.check_in_time = timezone.now()
+        
+        # Update equipment status
+        if self.equipment:
+            self.equipment.status = 'available'
+            self.equipment.save()
+            
         self.save()
         return self
     
@@ -65,6 +79,33 @@ class EquipmentRequest(models.Model):
         self.status = 'maintenance'
         self.maintenance_type = maintenance_type
         self.maintenance_date = timezone.now()
+        
+        # Update equipment status
+        if self.equipment:
+            self.equipment.status = 'under_repair'
+            self.equipment.save()
+            
+        self.save()
+        return self
+        
+    def approve(self):
+        """Approve equipment request"""
+        self.status = 'approved'
+        
+        # Update equipment status to 'in_use' immediately upon approval
+        if self.equipment:
+            self.equipment.status = 'in_use'
+            self.equipment.save()
+                
+        self.save()
+        return self
+        
+    def reject(self):
+        """Reject equipment request"""
+        self.status = 'rejected'
+        
+        # No change to equipment status since rejection means equipment remains in its current state
+        
         self.save()
         return self
     

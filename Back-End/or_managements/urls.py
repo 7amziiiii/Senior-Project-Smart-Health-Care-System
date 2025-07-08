@@ -40,6 +40,12 @@ from .views.instruments.instrument_views import (
     InstrumentListCreateView, 
     InstrumentRetrieveUpdateDestroyView
 )
+from .views.equipment_request_views import (
+    EquipmentRequestViewSet, available_equipment,
+    pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats,
+    operation_session_equipment
+)
+from .views.equipment_requests.room_scan_view import scan_room_for_equipment
 from .views.large_equipment.large_equipment_views import (
     LargeEquipmentListCreateView, 
     LargeEquipmentRetrieveUpdateDestroyView
@@ -54,7 +60,8 @@ from .views.log import OutboundTrackingList
 from .views.ml_views import equipment_usage_logs, equipment_maintenance_history, procedure_stats
 from .views.rfid_tags.rfid_tag_scan_view import scan_and_register_rfid
 from .views.equipment_request_views import (EquipmentRequestViewSet, available_equipment, 
-    pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats)
+    pending_requests, equipment_in_use, equipment_in_maintenance, equipment_usage_stats,
+    operation_session_equipment)
 
 # Router for API endpoints
 router = DefaultRouter()
@@ -124,6 +131,10 @@ urlpatterns = [
     path('equipment/in-use/', equipment_in_use, name='equipment-in-use'),
     path('equipment/in-maintenance/', equipment_in_maintenance, name='equipment-in-maintenance'),
     path('equipment/usage-stats/', equipment_usage_stats, name='equipment-usage-stats'),
+    path('equipment/scan-room/', scan_room_for_equipment, name='scan-room-for-equipment'),
+    
+    # Operation Session Equipment
+    path('operation-sessions/<int:session_id>/equipment/', operation_session_equipment, name='operation-session-equipment'),
     
     # Include router URLs for viewsets
     path('', include(router.urls)),

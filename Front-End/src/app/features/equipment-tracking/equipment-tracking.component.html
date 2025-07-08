@@ -41,42 +41,150 @@
     </div>
 
     <div class="equipment-table-container">
-      <h2>Required Large Equipment</h2>
-      <table class="equipment-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of equipmentList" [class.missing]="!item.isAvailable">
-            <td>{{ item.equipment.name }}</td>
-            <td>{{ item.equipment.equipment_id }}</td>
-            <td>{{ item.equipment.equipment_type }}</td>
-            <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
-              {{ item.isAvailable ? 'Available' : 'Missing' }}
-            </td>
-            <td>
-              <button 
-                *ngIf="!item.isAvailable" 
-                class="request-btn" 
-                (click)="requestEquipment(item.equipment)"
-                [disabled]="requestInProgress || item.equipment.status === 'in_use'"
-              >
-                <i class="fas fa-plus-circle"></i> Request
-              </button>
-              <span *ngIf="item.isAvailable" class="available-text">No action needed</span>
-            </td>
-          </tr>
-          <tr *ngIf="equipmentList.length === 0">
-            <td colspan="5" class="no-data">No equipment required for this surgery</td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- Equipment in the room -->
+      <div class="equipment-section">
+        <h2>Equipment In The Room</h2>
+        <div *ngIf="inRoomEquipment.length > 0; else noInRoomEquipment">
+          <table class="equipment-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of inRoomEquipment" [class.missing]="!item.isAvailable">
+                <td>{{ item.equipment.name }}</td>
+                <td>{{ item.equipment.equipment_id }}</td>
+                <td>{{ item.equipment.equipment_type }}</td>
+                <td>{{ item.equipment.location || 'Unknown' }}</td>
+                <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
+                  {{ item.isAvailable ? 'Available' : 'Missing' }}
+                </td>
+                <td>
+                  <button 
+                    class="request-btn" 
+                    (click)="requestEquipment(item.equipment)"
+                    [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
+                    [ngClass]="{
+                      'requested-btn': item.requestStatus === 'requested',
+                      'accepted-btn': item.requestStatus === 'approved',
+                      'rejected-btn': item.requestStatus === 'rejected',
+                      'in-use-btn': item.requestStatus === 'in_use',
+                      'returned-btn': item.requestStatus === 'returned',
+                      'maintenance-btn': item.requestStatus === 'maintenance'
+                    }"
+                  >
+                    <ng-container *ngIf="!item.requestStatus">
+                      <i class="fas fa-plus-circle"></i> Request
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'requested'">
+                      <i class="fas fa-clock"></i> Requested
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'approved'">
+                      <i class="fas fa-check-circle"></i> Approved
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'rejected'">
+                      <i class="fas fa-times-circle"></i> Rejected
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'in_use'">
+                      <i class="fas fa-spinner fa-spin"></i> In Use
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'returned'">
+                      <i class="fas fa-undo"></i> Returned
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'maintenance'">
+                      <i class="fas fa-tools"></i> Maintenance
+                    </ng-container>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noInRoomEquipment>
+          <div class="no-data-message">No equipment in this room</div>
+        </ng-template>
+      </div>
+      
+      <!-- Normal equipment list -->
+      <div class="equipment-section">
+        <h2>Other Required Equipment</h2>
+        <div *ngIf="normalEquipment.length > 0; else noNormalEquipment">
+          <table class="equipment-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of normalEquipment" [class.missing]="!item.isAvailable">
+                <td>{{ item.equipment.name }}</td>
+                <td>{{ item.equipment.equipment_id }}</td>
+                <td>{{ item.equipment.equipment_type }}</td>
+                <td>{{ item.equipment.location || 'Unknown' }}</td>
+                <td [class.status-available]="item.isAvailable" [class.status-missing]="!item.isAvailable">
+                  {{ item.isAvailable ? 'Available' : 'Missing' }}
+                </td>
+                <td>
+                  <button 
+                    class="request-btn" 
+                    (click)="requestEquipment(item.equipment)"
+                    [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
+                    [ngClass]="{
+                      'requested-btn': item.requestStatus === 'requested',
+                      'accepted-btn': item.requestStatus === 'approved',
+                      'rejected-btn': item.requestStatus === 'rejected',
+                      'in-use-btn': item.requestStatus === 'in_use',
+                      'returned-btn': item.requestStatus === 'returned',
+                      'maintenance-btn': item.requestStatus === 'maintenance'
+                    }"
+                  >
+                    <ng-container *ngIf="!item.requestStatus">
+                      <i class="fas fa-plus-circle"></i> Request
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'requested'">
+                      <i class="fas fa-clock"></i> Requested
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'approved'">
+                      <i class="fas fa-check-circle"></i> Approved
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'rejected'">
+                      <i class="fas fa-times-circle"></i> Rejected
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'in_use'">
+                      <i class="fas fa-spinner fa-spin"></i> In Use
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'returned'">
+                      <i class="fas fa-undo"></i> Returned
+                    </ng-container>
+                    <ng-container *ngIf="item.requestStatus === 'maintenance'">
+                      <i class="fas fa-tools"></i> Maintenance
+                    </ng-container>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noNormalEquipment>
+          <div class="no-data-message">No other equipment required for this surgery</div>
+        </ng-template>
+      </div>
+      
+      <!-- Show if no equipment at all -->
+      <div *ngIf="equipmentList.length === 0" class="no-data-message">
+        No equipment required for this surgery
+      </div>
     </div>
   </div>
 

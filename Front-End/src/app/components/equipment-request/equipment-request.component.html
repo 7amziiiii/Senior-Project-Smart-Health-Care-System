@@ -1,0 +1,56 @@
+<div class="equipment-request-container">
+  <div class="equipment-request-header">
+    <h3>Large Equipment Requests</h3>
+    <p *ngIf="surgery">For: {{ surgery.name }} - {{ surgery.scheduledTime | date:'MMM d, y • h:mm a' }}</p>
+  </div>
+
+  <!-- Error and success messages -->
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+  <!-- Available Equipment Section -->
+  <div class="equipment-section">
+    <h4>Available Equipment</h4>
+    <div *ngIf="loading" class="loading">Loading equipment...</div>
+    <div *ngIf="!loading && availableEquipment.length === 0" class="empty-list">
+      No equipment available for this operation date and type.
+    </div>
+
+    <div class="equipment-list">
+      <div *ngFor="let item of availableEquipment" class="equipment-item">
+        <div class="equipment-info">
+          <h5>{{ item.name }}</h5>
+          <div class="equipment-details">
+            <span class="equipment-id">{{ item.equipment_id }}</span>
+            <span class="equipment-type">{{ item.equipment_type }}</span>
+          </div>
+        </div>
+        <button class="request-button" (click)="requestEquipment(item)" [disabled]="loading">
+          Request
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requested Equipment Section -->
+  <div class="equipment-section">
+    <h4>Requested Equipment</h4>
+    <div *ngIf="!requests.length" class="empty-list">
+      No equipment requests for this operation.
+    </div>
+
+    <div class="request-list">
+      <div *ngFor="let request of requests" class="request-item">
+        <div class="request-info">
+          <h5>{{ request.equipment.name }}</h5>
+          <div class="request-details">
+            <span class="equipment-id">{{ request.equipment.equipment_id }}</span>
+            <span class="request-status" [ngClass]="getStatusClass(request.status)">
+              {{ getStatusLabel(request.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

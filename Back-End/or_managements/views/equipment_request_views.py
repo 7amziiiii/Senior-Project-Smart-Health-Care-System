@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.serializers import ValidationError
 
 from django.shortcuts import get_object_or_404
 
@@ -38,23 +39,38 @@ class EquipmentRequestViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAdmin | IsMaintenance]
         return [permission() for permission in permission_classes]
     
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         # Use the equipment service to create the request
-        equipment_id = self.request.data.get('equipment')
-        operation_session_id = self.request.data.get('operation_session')
+        equipment_id = request.data.get('equipment')
+        operation_session_id = request.data.get('operation_session')
         
-        request, message = EquipmentService.request_equipment(
+        # Get serializer and validate data
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Call the equipment service
+        equipment_request, message = EquipmentService.request_equipment(
             equipment_id=equipment_id,
             operation_session_id=operation_session_id,
-            requested_by_user=self.request.user
+            requested_by_user=request.user
         )
         
-        if not request:
+        if not equipment_request:
             # If request creation failed, raise an exception
-            raise serializer.ValidationError({"error": message})
+            raise ValidationError({"error": message})
         
-        # No need to save serializer as the service created the object
-        serializer.instance = request
+        # Set the instance on the serializer
+        serializer.instance = equipment_request
+        
+        # Get the equipment status to include in response
+        equipment_status = LargeEquipment.objects.get(id=equipment_id).status
+        
+        # Return custom response with equipment status
+        return Response({
+            "request": serializer.data,
+            "message": message,
+            "equipment_status": equipment_status
+        }, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin | IsMaintenance])
     def approve(self, request, pk=None):
@@ -138,6 +154,21 @@ class EquipmentRequestViewSet(viewsets.ModelViewSet):
         
         serializer = EquipmentRequestSerializer(equipment_request)
         return Response({"message": message, "request": serializer.data})
+        
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin | IsMaintenance])
+    def fulfill(self, request, pk=None):
+        """
+        Fulfill an equipment request (mark as in_use)
+        """
+        equipment_request, message = EquipmentService.fulfill_request(
+            request_id=pk
+        )
+        
+        if not equipment_request:
+            return Response({"error": message}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = EquipmentRequestSerializer(equipment_request)
+        return Response({"message": message, "request": serializer.data})
 
 
 @api_view(['GET'])
@@ -154,10 +185,23 @@ def available_equipment(request):
     if operation_type_id:
         try:
             from ..models.operation_type import OperationType
-            operation_type = OperationType.objects.get(id=operation_type_id)
-        except Exception:
+            # Try to convert to integer ID first
+            try:
+                operation_type_id_int = int(operation_type_id)
+                operation_type = OperationType.objects.get(id=operation_type_id_int)
+            except (ValueError, TypeError):
+                # If not an integer, try to find by name
+                operation_type = OperationType.objects.filter(name=operation_type_id).first()
+                
+            # If we couldn't find it by ID or name
+            if operation_type is None:
+                return Response(
+                    {"error": f"Operation type not found: {operation_type_id}"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
             return Response(
-                {"error": "Invalid operation type ID"}, 
+                {"error": f"Error finding operation type: {str(e)}"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -224,3 +268,97 @@ def equipment_usage_stats(request):
     )
     
     return Response(stats)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def operation_session_equipment(request, session_id):
+    """
+    Get equipment needed for a specific operation session
+    """
+    try:
+        # Import here to avoid circular imports
+        from ..models.operation_session import OperationSession
+        from ..models.operation_type import OperationType
+        from ..models.large_equipment import LargeEquipment
+        from ..models.equipment_request import EquipmentRequest
+        import logging
+        
+        # Enable debug logging
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Processing equipment request for session_id: {session_id}")
+        
+        # Get the operation session
+        operation_session = OperationSession.objects.get(id=session_id)
+        logger.debug(f"Found operation session: {operation_session}")
+        
+        # Get the operation type for this session
+        operation_type = operation_session.operation_type
+        logger.debug(f"Operation type: {operation_type}")
+        
+        if operation_type is None:
+            return Response([], status=status.HTTP_200_OK)
+        
+        # Get equipment for this operation type
+        # Note: We're getting ALL equipment (both available and unavailable) to show the request button
+        try:
+            equipment_list = LargeEquipment.objects.all()
+            logger.debug(f"Found {len(equipment_list)} equipment items")
+        except Exception as eq:
+            logger.error(f"Error querying equipment: {str(eq)}")
+            # Return an empty list if we can't find any equipment
+            equipment_list = []
+        
+        # Check which equipment is already assigned/requested
+        try:
+            requested_equipment_ids = set(EquipmentRequest.objects.filter(
+                operation_session=operation_session
+            ).values_list('equipment_id', flat=True))
+            logger.debug(f"Found {len(requested_equipment_ids)} requested equipment items")
+        except Exception as req_err:
+            logger.error(f"Error querying equipment requests: {str(req_err)}")
+            requested_equipment_ids = set()
+        
+        # Prepare response data
+        equipment_data = []
+        for equipment in equipment_list:
+            try:
+                # Add each piece of equipment with its availability status
+                is_requested = equipment.id in requested_equipment_ids
+                is_available = equipment.status == 'available'
+                
+                equipment_data.append({
+                    'surgery_id': operation_session.id,
+                    'equipment_id': equipment.id,
+                    'equipment': {
+                        'id': equipment.id,
+                        'name': equipment.name,
+                        'equipment_id': equipment.equipment_id,
+                        'equipment_type': equipment.equipment_type,
+                        'status': equipment.status,
+                        'location': equipment.location,  # Include location field
+                        'maintenance_date': equipment.next_maintenance_date.isoformat() if equipment.next_maintenance_date else None,
+                    },
+                    'isAvailable': is_available and not is_requested,
+                    'isRequested': is_requested,
+                    'isRequired': True  # All equipment shown is required for the surgery
+                })
+            except Exception as e_err:
+                logger.error(f"Error processing equipment item {equipment.id}: {str(e_err)}")
+        
+        logger.debug(f"Returning {len(equipment_data)} equipment items")
+        return Response(equipment_data, status=status.HTTP_200_OK)
+        
+    except OperationSession.DoesNotExist:
+        return Response(
+            {"error": f"Operation session {session_id} not found"}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"ERROR: {str(e)}\n{tb}")
+        return Response(
+            {"error": f"Error retrieving equipment: {str(e)}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

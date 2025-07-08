@@ -33,6 +33,11 @@
             Equipment Requests
           </h3>
           <span class="badge" *ngIf="hasNewRequests">New</span>
+          <div class="header-actions">
+            <button class="btn-refresh" (click)="loadPendingRequests()">
+              <i class="fa fa-sync"></i> Refresh
+            </button>
+          </div>
         </div>
         
         <div class="card-body">
@@ -44,8 +49,11 @@
           
           <!-- Empty state -->
           <div *ngIf="!requestsLoading && equipmentRequests.length === 0" class="empty-state">
-            <i class="fas fa-clipboard-check"></i>
-            <p>No equipment requests at this time</p>
+            <i class="fa fa-info-circle"></i>
+            <span>No pending equipment requests at this time.</span>
+            <button class="btn btn-refresh" (click)="loadPendingRequests()">
+              <i class="fa fa-sync"></i> Refresh
+            </button>
           </div>
           
           <!-- Request List -->
@@ -55,8 +63,18 @@
                  [ngClass]="{'priority': request.status === 'requested'}">
               
               <div class="request-header">
-                <span class="equipment-name">{{ request.equipment?.name || 'Equipment' }}</span>
-                <span class="status-pill" [ngClass]="request.status">{{ request.status }}</span>
+                <span class="equipment-name">{{ request.equipment && request.equipment.name || 'Equipment' }}</span>
+                <span class="status-pill" [ngClass]="request.status">
+                  <i class="fas" [ngClass]="{
+                    'fa-clock': request.status === 'requested',
+                    'fa-check-circle': request.status === 'approved',
+                    'fa-times-circle': request.status === 'rejected',
+                    'fa-tools': request.status === 'maintenance',
+                    'fa-truck': request.status === 'in_use',
+                    'fa-undo': request.status === 'returned'
+                  }"></i>
+                  {{ request.status | titlecase }}
+                </span>
               </div>
               
               <div class="request-details">
@@ -66,7 +84,7 @@
                 </div>
                 <div class="detail-row">
                   <span class="label">Equipment ID:</span>
-                  <span class="value">{{ request.equipment?.equipment_id || 'N/A' }}</span>
+                  <span class="value">{{ request.equipment && request.equipment.equipment_id || 'N/A' }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="label">Requested:</span>
@@ -74,10 +92,32 @@
                 </div>
               </div>
               
-              <div class="request-actions" *ngIf="request.status === 'requested'">
-                <button class="btn-primary" *ngIf="request.id !== undefined" (click)="fulfillRequest(request.id)">
-                  <i class="fas fa-check"></i> Fulfill Request
-                </button>
+              <div class="request-actions">
+                <!-- Actions for requested equipment -->
+                <div *ngIf="checkStatus(request, 'requested')" class="action-group">
+                  <button class="btn-success" *ngIf="request.id !== undefined" (click)="approveRequest(request.id)">
+                    <i class="fas fa-check"></i> Approve
+                  </button>
+                  <button class="btn-danger" *ngIf="request.id !== undefined" (click)="rejectRequest(request.id)">
+                    <i class="fas fa-times"></i> Reject
+                  </button>
+                </div>
+                
+                <!-- Actions for approved equipment -->
+                <div *ngIf="checkStatus(request, 'approved')" class="action-group">
+                  <button class="btn-primary" *ngIf="request.id !== undefined" (click)="fulfillRequest(request.id)">
+                    <i class="fas fa-truck-loading"></i> Mark as Delivered
+                  </button>
+                </div>
+                
+                <!-- Status indicators for completed actions -->
+                <div *ngIf="checkStatus(request, 'in_use')" class="action-complete">
+                  <i class="fas fa-check-circle"></i> Equipment delivered
+                </div>
+                
+                <div *ngIf="checkStatus(request, 'rejected')" class="action-complete rejected">
+                  <i class="fas fa-times-circle"></i> Request rejected
+                </div>
               </div>
             </div>
           </div>
