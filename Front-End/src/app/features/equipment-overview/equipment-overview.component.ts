@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { EquipmentService } from '../../services/equipment.service';
 
 interface Equipment {
   id: number;
@@ -30,90 +31,64 @@ export class EquipmentOverviewComponent implements OnInit {
   selectedEquipment: Equipment | null = null;
   newNote: string = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private equipmentService: EquipmentService) {}
 
   ngOnInit(): void {
-    // Simulated data - in a real app this would come from a service
-    this.allEquipment = [
-      {
-        id: 1,
-        name: 'MRI Scanner',
-        type: 'Imaging',
-        status: 'in_or',
-        roomNumber: 'OR-101',
-        lastMaintenance: '2025-05-15',
-        nextMaintenance: '2025-08-15',
-        notes: 'Regular maintenance completed. Cooling system checked.'
+    console.log('Loading equipment overview data from API');
+    
+    // Load equipment overview from API
+    this.equipmentService.getEquipmentOverview().subscribe({
+      next: (equipmentData) => {
+        console.log('Received equipment overview data:', equipmentData);
+        
+        // Map API response to our Equipment interface
+        this.allEquipment = equipmentData.map(item => {
+          // Convert backend status to frontend status format
+          let status: 'in_maintenance' | 'in_or' | 'not_found' | 'available' = 'available';
+          
+          if (item.status === 'In OR Room') {
+            status = 'in_or';
+          } else if (item.status === 'In Maintenance') {
+            status = 'in_maintenance';
+          } else if (item.status === 'Not Found') {
+            status = 'not_found';
+          } else if (item.status === 'Available') {
+            status = 'available';
+          }
+          
+          // Create Equipment object
+          const equipment: Equipment = {
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            status: status,
+            lastMaintenance: item.last_maintenance,
+            nextMaintenance: item.next_maintenance,
+            notes: item.notes || ''
+          };
+          
+          // Add optional fields if present
+          if (item.location && item.location.startsWith('OR-')) {
+            equipment.roomNumber = item.location;
+          }
+          
+          if (item.last_seen) {
+            equipment.lastSeen = item.last_seen;
+          }
+          
+          return equipment;
+        });
+        
+        this.applyFilters();
       },
-      {
-        id: 2,
-        name: 'Ventilator #A2234',
-        type: 'Respiratory',
-        status: 'in_maintenance',
-        lastMaintenance: '2025-06-01',
-        nextMaintenance: '2025-09-01',
-        notes: 'Filter replacement needed. Currently under repair.'
-      },
-      {
-        id: 3,
-        name: 'ECG Monitor',
-        type: 'Cardiac',
-        status: 'not_found',
-        lastSeen: 'OR-203 on 2025-07-01',
-        lastMaintenance: '2025-04-10',
-        nextMaintenance: '2025-07-10',
-        notes: 'Battery replacement recommended on next service.'
-      },
-      {
-        id: 4,
-        name: 'Surgical Robot',
-        type: 'Surgery',
-        status: 'available',
-        lastMaintenance: '2025-06-28',
-        nextMaintenance: '2025-09-28',
-        notes: 'Software updated to v4.2.1. Calibration performed.'
-      },
-      {
-        id: 5,
-        name: 'Defibrillator #D5678',
-        type: 'Emergency',
-        status: 'in_or',
-        roomNumber: 'OR-105',
-        lastMaintenance: '2025-05-22',
-        nextMaintenance: '2025-08-22',
-        notes: 'Battery capacity at 95%. No issues found.'
-      },
-      {
-        id: 6,
-        name: 'Anesthesia Machine',
-        type: 'Anesthesiology',
-        status: 'not_found',
-        lastSeen: 'Storage Room B on 2025-06-25',
-        lastMaintenance: '2025-04-15',
-        nextMaintenance: '2025-07-15',
-        notes: 'Requires immediate location and inspection. Maintenance overdue.'
-      },
-      {
-        id: 7,
-        name: 'X-Ray Machine',
-        type: 'Imaging',
-        status: 'in_maintenance',
-        lastMaintenance: '2025-07-02',
-        nextMaintenance: '2025-10-02',
-        notes: 'Calibration in progress. Expected back in service on 2025-07-08.'
-      },
-      {
-        id: 8,
-        name: 'Ultrasound Scanner',
-        type: 'Imaging',
-        status: 'available',
-        lastMaintenance: '2025-06-10',
-        nextMaintenance: '2025-09-10',
-        notes: 'New transducer installed. Working optimally.'
+      error: (error) => {
+        console.error('Error loading equipment overview data:', error);
+        
+        // Fallback to empty array in case of error
+        this.allEquipment = [];
+        this.applyFilters();
       }
-    ];
-
-    this.applyFilters();
+    });
   }
 
   applyFilters(): void {
@@ -144,15 +119,35 @@ export class EquipmentOverviewComponent implements OnInit {
 
   addNote(): void {
     if (this.selectedEquipment && this.newNote.trim()) {
-      // In a real app, this would call an API to update the notes
-      this.selectedEquipment.notes = `${this.newNote} (Added on ${new Date().toISOString().split('T')[0]})\n\n${this.selectedEquipment.notes}`;
-      this.newNote = '';
-
-      // Update the equipment in the main array
-      const index = this.allEquipment.findIndex(e => e.id === this.selectedEquipment?.id);
-      if (index > -1) {
-        this.allEquipment[index] = {...this.selectedEquipment};
-      }
+      // Since we're inside the if-block that checks selectedEquipment is not null,
+      // we can safely assert that it exists with the non-null assertion operator
+      const equipmentId = this.selectedEquipment!.id;
+      const currentDate = new Date().toISOString().split('T')[0];
+      const formattedNote = `${this.newNote} (Added on ${currentDate})\n\n${this.selectedEquipment!.notes}`;
+      
+      // Call the API to save the notes
+      this.equipmentService.updateEquipmentNotes(equipmentId, formattedNote).subscribe({
+        next: (response) => {
+          console.log('Notes updated successfully:', response);
+          
+          // Update the UI with the saved notes
+          this.selectedEquipment!.notes = formattedNote;
+          this.newNote = '';
+          
+          // Update the equipment in the main array
+          // Since we already checked selectedEquipment at the beginning of the method
+          // and we're updating it in the callback, we know it's still not null
+          const equipment = this.selectedEquipment!;
+          const index = this.allEquipment.findIndex(e => e.id === equipment.id);
+          if (index > -1) {
+            this.allEquipment[index] = {...equipment};
+          }
+        },
+        error: (error) => {
+          console.error('Error updating equipment notes:', error);
+          alert('Failed to save equipment notes. Please try again.');
+        }
+      });
     }
   }
 

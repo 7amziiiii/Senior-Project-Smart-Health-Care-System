@@ -21,7 +21,7 @@ class EquipmentService:
     """
     
     @staticmethod
-    def scan_room_for_equipment(room_id, scan_duration=3):
+    def scan_room_for_equipment(room_id, scan_duration=5):
         """
         Scan a room for equipment using RFID technology
         
@@ -416,6 +416,56 @@ class EquipmentService:
             QuerySet: EquipmentRequest objects with status 'maintenance'
         """
         return EquipmentRequest.objects.filter(status='maintenance')
+    
+    @staticmethod
+    def get_recent_equipment_locations(equipment_id):
+        """
+        Get recent locations where equipment has been detected
+        
+        Args:
+            equipment_id (int): ID of the equipment
+            
+        Returns:
+            list: List of tuples (room_id, timestamp) representing recent locations
+        """
+        try:
+            import sys
+            print(f"\nDEBUG: Looking up locations for equipment ID {equipment_id}", file=sys.stderr)
+            
+            # First check recent equipment requests to see if it's been used in rooms
+            recent_requests = EquipmentRequest.objects.filter(
+                equipment_id=equipment_id,
+                operation_session__room__isnull=False
+            ).order_by('-created_at')[:5]  # Get 5 most recent requests
+            
+            print(f"DEBUG: Found {recent_requests.count()} recent requests with rooms for equipment {equipment_id}", file=sys.stderr)
+            
+            results = []
+            
+            # Extract room information from requests
+            for req in recent_requests:
+                try:
+                    if req.operation_session and req.operation_session.room:
+                        room_id = f"OR-{req.operation_session.room.room_id}"
+                        timestamp = req.check_out_time or req.created_at
+                        results.append((room_id, timestamp))
+                        print(f"DEBUG: Added location {room_id} at {timestamp} for equipment {equipment_id}", file=sys.stderr)
+                except Exception as req_error:
+                    print(f"DEBUG: Error processing request {req.id}: {str(req_error)}", file=sys.stderr)
+                    continue
+            
+            # Even if no results, return an empty list (not None)
+            return results or []
+            
+        except Exception as e:
+            import logging
+            import traceback
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting equipment locations: {str(e)}")
+            print(f"DEBUG: Exception in get_recent_equipment_locations: {str(e)}", file=sys.stderr)
+            print(traceback.format_exc(), file=sys.stderr)
+            # Always return a list (empty if error)
+            return []
     
     @staticmethod
     def get_equipment_usage_stats(equipment_id=None, start_date=None, end_date=None):

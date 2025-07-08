@@ -43,6 +43,13 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
       description: 'AI-powered maintenance predictions and recommendations',
       icon: 'fa-chart-line',
       route: '/predictive-maintenance'
+    },
+    {
+      id: 'equipment-requests',
+      title: 'Equipment Requests',
+      description: 'Review and manage equipment requests from medical staff',
+      icon: 'fa-clipboard-list',
+      route: '/maintenance' // This will stay on the maintenance dashboard which already shows equipment requests
     }
   ];
 
