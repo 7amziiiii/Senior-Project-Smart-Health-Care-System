@@ -9,6 +9,7 @@ import { AdminDashboardComponent } from './admin/admin-dashboard/admin-dashboard
 import { MaintenanceDashboardComponent } from './maintenance/maintenance-dashboard/maintenance-dashboard.component';
 import { EquipmentOverviewComponent } from './features/equipment-overview/equipment-overview.component';
 import { PredictiveMaintenanceComponent } from './features/predictive-maintenance/predictive-maintenance.component';
+import { SystemLogsComponent } from './admin/system-logs/system-logs.component';
 import { adminGuard } from './guards/admin.guard';
 import { maintenanceGuard } from './guards/maintenance.guard';
 import { doctorGuard } from './guards/doctor.guard';
@@ -68,5 +69,6 @@ export const routes: Routes = [
   { path: 'equipment-tracking/:surgeryId', component: EquipmentTrackingComponent, canActivate: [medicalStaffGuard] },
   { path: 'equipment-overview', component: EquipmentOverviewComponent, canActivate: [maintenanceGuard] },
   { path: 'predictive-maintenance', component: PredictiveMaintenanceComponent, canActivate: [maintenanceGuard] },
+  { path: 'system-logs', component: SystemLogsComponent, canActivate: [adminGuard] },
   { path: '**', redirectTo: 'login' } // Redirect invalid routes to login
 ];

@@ -1,0 +1,157 @@
+<div class="system-logs-container">
+  <!-- Header with navigation -->
+  <header class="page-header">
+    <div class="header-content">
+      <button class="back-btn" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </button>
+      <h1><i class="fas fa-clipboard-list"></i> System Logs</h1>
+    </div>
+    <div class="actions">
+      <button class="action-btn export-btn" (click)="exportLogs()">
+        <i class="fas fa-file-export"></i> Export
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters section -->
+  <section class="filters-section">
+    <div class="card filter-card">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label for="dateRange">Date Range:</label>
+          <select id="dateRange" [(ngModel)]="selectedDateRange">
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+            <option value="custom">Custom Range</option>
+          </select>
+        </div>
+        
+        <div class="filter-group search-group">
+          <label for="searchLogs">Search:</label>
+          <div class="search-input-wrapper">
+            <input 
+              type="text" 
+              id="searchLogs" 
+              [(ngModel)]="searchText" 
+              placeholder="Search by user, action or details..."
+            >
+            <i class="fas fa-search search-icon"></i>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn filter-btn" (click)="applyFilters()">
+            <i class="fas fa-filter"></i> Apply
+          </button>
+          <button class="btn clear-btn" *ngIf="filterActive" (click)="clearFilters()">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabs for log types -->
+  <div class="tabs-container">
+    <div class="tabs">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeLogType === 'verification'"
+        (click)="selectLogType('verification')"
+      >
+        <i class="fas fa-check-circle"></i> Verification Logs
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeLogType === 'outbound'"
+        (click)="selectLogType('outbound')"
+      >
+        <i class="fas fa-exchange-alt"></i> Outbound Logs
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeLogType === 'system'"
+        (click)="selectLogType('system')"
+      >
+        <i class="fas fa-server"></i> System Activity
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="activeLogType === 'all'"
+        (click)="selectLogType('all')"
+      >
+        <i class="fas fa-list"></i> All Logs
+      </button>
+    </div>
+  </div>
+
+  <!-- Logs table -->
+  <div class="logs-content card">
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading logs...</p>
+    </div>
+
+    <div *ngIf="!loading" class="table-responsive">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredLogs.length === 0" class="empty-state">
+            <td colspan="5">
+              <div class="empty-message">
+                <i class="fas fa-info-circle"></i>
+                <p>No logs found matching your criteria.</p>
+              </div>
+            </td>
+          </tr>
+          <tr *ngFor="let log of filteredLogs">
+            <td>{{ log.timestamp }}</td>
+            <td>{{ log.user }}</td>
+            <td>{{ log.action }}</td>
+            <td>{{ log.details }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="'status-' + log.status">
+                {{ log.status === 'complete' ? 'Complete' : 
+                   log.status === 'pending' ? 'Pending' : 'Issue' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage === 1" 
+          (click)="previousPage()"
+        >
+          <i class="fas fa-chevron-left"></i> Previous
+        </button>
+        
+        <div class="page-indicator">
+          Page {{ currentPage }} of {{ totalPages }}
+        </div>
+        
+        <button 
+          class="pagination-btn" 
+          [disabled]="currentPage === totalPages" 
+          (click)="nextPage()"
+        >
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

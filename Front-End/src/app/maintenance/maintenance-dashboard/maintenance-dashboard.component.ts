@@ -52,6 +52,8 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
     private equipmentService: EquipmentService
   ) {}
 
+  isAdmin = false;
+
   ngOnInit(): void {
     // Check if user is authenticated and has maintenance role
     if (!this.authService.isLoggedIn()) {
@@ -62,6 +64,8 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
     const userData = this.authService.getUserData();
     if (userData) {
       this.username = userData.username || 'Maintenance Staff';
+      // Check if user is admin (to display back button)
+      this.isAdmin = this.authService.isAdmin();
     }
     
     // Load pending equipment requests
@@ -115,6 +119,11 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
     this.requestsLoading = false;
     
     console.log('Processed equipment requests:', this.equipmentRequests);
+  }
+  
+  goBack(): void {
+    // Navigate back to admin dashboard
+    this.router.navigate(['/admin']);
   }
   
   navigateToFeature(featureId: string): void {

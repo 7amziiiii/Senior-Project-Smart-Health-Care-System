@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, NavigationExtras } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SurgeryDataService, Surgery } from '../../services/surgery-data.service';
 import { OutboundTrackingService, OutboundTrackingResponse } from '../../services/outbound-tracking.service';
@@ -39,26 +39,35 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
 
   constructor(
     private surgeryDataService: SurgeryDataService,
-    private outboundService: OutboundTrackingService
+    private outboundService: OutboundTrackingService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loading = true;
-    this.surgeryDataService.getAllSurgeries().subscribe(
-      (data: Surgery[]) => {
-        this.surgeries = data;
+    
+    // First check if a surgery was selected from dashboard
+    this.surgeryDataService.getSelectedSurgery().subscribe(surgery => {
+      if (surgery) {
+        // If we have a selected surgery from the dashboard, use that
+        this.selectedSurgery = surgery;
         this.loading = false;
-        
-        // Automatically select the first surgery if available
-        if (this.surgeries.length > 0) {
-          this.selectSurgery(this.surgeries[0]);
-        }
-      },
-      (error: any) => {
-        console.error('Error fetching surgeries', error);
-        this.loading = false;
+        // Start polling when surgery is selected
+        this.startPolling();
+      } else {
+        // Fallback to getting all surgeries only if no selected surgery
+        this.surgeryDataService.getAllSurgeries().subscribe(
+          (data: Surgery[]) => {
+            this.surgeries = data;
+            this.loading = false;
+          },
+          (error: any) => {
+            console.error('Error fetching surgeries', error);
+            this.loading = false;
+          }
+        );
       }
-    );
+    });
   }
 
   selectSurgery(surgery: Surgery): void {
@@ -78,11 +87,19 @@ export class OutboundTrackingComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.selectedSurgery = null;
-    this.scanComplete = false;
+    // Always go back to the dashboard with surgery and features context preserved
+    const navigationExtras: NavigationExtras = {
+      queryParams: { 
+        showFeatures: 'true',
+        keepSurgeryContext: 'true'
+      }
+    };
     
     // Stop polling when going back
     this.stopPolling();
+    
+    // Navigate back to dashboard with the selected surgery preserved
+    this.router.navigate(['/dashboard'], navigationExtras);
   }
 
   startScan(): void {
