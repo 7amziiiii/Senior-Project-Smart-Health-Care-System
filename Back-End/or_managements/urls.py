@@ -14,6 +14,7 @@ from .views import (
     UserApprovalView,
     UserProfileView
 )
+from .views.auth.admin_user_management_view import AdminUserListView, AdminUserDetailView
 
 # Import model views
 from .views.operation_types.operation_type_views import (
@@ -82,6 +83,9 @@ urlpatterns = [
     path('auth/users/approval/', PendingUsersListView.as_view(), name='pending-users'),
     path('auth/users/<int:pk>/approve/', UserApprovalView.as_view(), name='approve-user'),
     path('auth/profile/', UserProfileView.as_view(), name='user-profile'),
+    # Admin User Management URLs
+    path('auth/users/', AdminUserListView.as_view(), name='admin-users-list'),
+    path('auth/users/<int:pk>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
     
     # Operation Type URLs
     path('operation-types/', OperationTypeListCreateView.as_view(), name='operation-type-list-create'),
