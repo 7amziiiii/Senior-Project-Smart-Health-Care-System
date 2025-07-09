@@ -141,12 +141,20 @@
   .equipment-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 1rem;
-
+    margin: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    table-layout: fixed;
+    
     th, td {
       padding: 0.75rem;
       text-align: left;
       border-bottom: 1px solid #e0e0e0;
+      vertical-align: middle;
+      height: 50px; /* Fixed height for all cells */
+      line-height: 20px;
+      box-sizing: border-box;
     }
 
     th {
@@ -166,6 +174,16 @@
     .status-missing {
       color: #f44336;
       font-weight: 500;
+    }
+    
+    .status-ready {
+      color: #4CAF50;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+      vertical-align: middle;
     }
 
     .request-btn {
@@ -234,6 +252,21 @@
       color: #e74c3c;
       font-weight: bold;
       font-style: normal;
+    }
+    
+    .no-action-needed {
+      color: #4CAF50;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9rem;
+      vertical-align: middle;
+      
+      i {
+        color: #4CAF50;
+        font-size: 0.9rem;
+      }
     }
   }
 

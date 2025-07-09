@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { interval, Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, NavigationExtras } from '@angular/router';
@@ -13,11 +14,32 @@ import { LargeEquipment, SurgeryEquipment, EquipmentRequest } from '../../models
   templateUrl: './equipment-tracking.component.html',
   styleUrl: './equipment-tracking.component.scss'
 })
-export class EquipmentTrackingComponent implements OnInit {
+export class EquipmentTrackingComponent implements OnInit, OnDestroy {
   surgeryId: number = 0;
   surgeryName: string = '';
   equipmentList: SurgeryEquipment[] = [];
-  inRoomEquipment: SurgeryEquipment[] = [];
+  private _inRoomEquipment: SurgeryEquipment[] = [];
+
+  // Getter to ensure all equipment in room is marked as ready to use
+  get inRoomEquipment(): SurgeryEquipment[] {
+    // Force all items to have readyToUse = true
+    this._inRoomEquipment.forEach(item => {
+      item.readyToUse = true;
+    });
+    return this._inRoomEquipment;
+  }
+
+  // Setter to maintain the private array
+  set inRoomEquipment(value: SurgeryEquipment[]) {
+    this._inRoomEquipment = value;
+    // Mark all as ready to use immediately
+    if (this._inRoomEquipment) {
+      this._inRoomEquipment.forEach(item => {
+        item.readyToUse = true;
+      });
+    }
+  }
+
   normalEquipment: SurgeryEquipment[] = [];
   loading: boolean = true;
   errorMessage: string = '';
@@ -28,6 +50,13 @@ export class EquipmentTrackingComponent implements OnInit {
   roomScanInProgress: boolean = false;
   roomScanComplete: boolean = false;
   roomId: string = '';
+  
+  // Set to track detected equipment IDs for cumulative scanning
+  private detectedEquipmentIds: Set<number> = new Set();
+
+  // Auto-scan properties
+  private pollingSubscription: Subscription | null = null;
+  private pollingInterval = 3000; // 3 seconds
 
   constructor(
     private route: ActivatedRoute,
@@ -44,6 +73,9 @@ export class EquipmentTrackingComponent implements OnInit {
     this.loadSurgeryName();
     // Get the room associated with the surgery and scan it
     this.loadRoomAndScan();
+    
+    // Start auto-scanning
+    this.startPolling();
   }
 
   loadSurgeryName(): void {
@@ -345,13 +377,29 @@ export class EquipmentTrackingComponent implements OnInit {
    * Scan the room for equipment using RFID technology
    */
   scanRoom(): void {
-    if (!this.roomId) {
-      console.error('Cannot scan room: No room ID available');
+    if (this.roomScanInProgress) {
+      console.log('Room scan already in progress, ignoring request');
       return;
     }
-    
-    console.log(`Scanning room ${this.roomId} for equipment...`);
+
+    console.log('Starting room scan...');
     this.roomScanInProgress = true;
+    
+    // Before scanning, make sure all existing inRoomEquipment is marked as ready to use
+    if (this.inRoomEquipment && this.inRoomEquipment.length > 0) {
+      this.inRoomEquipment.forEach(item => {
+        item.readyToUse = true;
+      });
+    }
+    
+    // Create a set of existing equipment IDs in the in-room list to avoid duplicates
+    const existingEquipmentIds = new Set(
+      this.inRoomEquipment
+        .filter(e => e.equipment && e.equipment.id)
+        .map(e => e.equipment.id)
+    );
+    
+    console.log('Existing equipment IDs in room:', Array.from(existingEquipmentIds));
     
     // Scan duration of 3 seconds
     this.equipmentService.scanRoom(this.roomId, 3).subscribe({
@@ -361,25 +409,46 @@ export class EquipmentTrackingComponent implements OnInit {
         this.roomScanComplete = true;
         this.roomScanInProgress = false;
         
-        // Reset in-room equipment list
-        this.inRoomEquipment = [];
-        
         // Process equipment found in the room (both expected and unexpected)
-        // First, process equipment properly assigned to this room
+        // First, make sure all existing in-room equipment is marked as ready to use
+        // Ensure ALL equipment in room is marked as ready to use
+        this.inRoomEquipment.forEach(item => {
+          item.readyToUse = true;
+        });
+        
+        // Force updates to render in UI
+        setTimeout(() => {
+          console.log('Ensuring all equipment in room is ready to use:', this.inRoomEquipment.length);
+        }, 0);
+        
+        // Process equipment properly assigned to this room
         if (results && results.equipment_in_room && Array.isArray(results.equipment_in_room)) {
           console.log(`Found ${results.equipment_in_room.length} equipment items properly assigned to room`);
           
           // Map the equipment in room to our component model
           results.equipment_in_room.forEach((item: any) => {
-            console.log('Processing scanned equipment item:', item.id, item.name);
+            console.log('Processing equipment in room:', item.id, item.name);
             
-            // Find the equipment in our full list (if it exists)
+            // Store this ID as detected
+            if (item.id) {
+              this.detectedEquipmentIds.add(item.id);
+            }
+            
+            // Skip if already in our in-room list to avoid duplicates
+            if (item.id && existingEquipmentIds.has(item.id)) {
+              console.log('Equipment already in in-room list, skipping:', item.id, item.name);
+              return;
+            }
+            
+            // Find the equipment in our full list
             const existingItem = this.equipmentList.find(e => 
               e.equipment && e.equipment.id === item.id
             );
             
             if (existingItem) {
               console.log('Found matching equipment in existing list:', existingItem);
+              // Mark as ready to use since it's detected in the room
+              existingItem.readyToUse = true;
               this.inRoomEquipment.push(existingItem);
               
               // Remove from normal list to avoid duplication
@@ -417,6 +486,17 @@ export class EquipmentTrackingComponent implements OnInit {
           results.unexpected_equipment.forEach((item: any) => {
             console.log('Processing unexpected equipment item:', item.id, item.name);
             
+            // Store this ID as detected
+            if (item.id) {
+              this.detectedEquipmentIds.add(item.id);
+            }
+            
+            // Skip if already in our in-room list to avoid duplicates
+            if (item.id && existingEquipmentIds.has(item.id)) {
+              console.log('Equipment already in in-room list, skipping:', item.id, item.name);
+              return;
+            }
+            
             // Find the equipment in our full list (if it exists)
             const existingItem = this.equipmentList.find(e => 
               e.equipment && e.equipment.id === item.id
@@ -443,7 +523,8 @@ export class EquipmentTrackingComponent implements OnInit {
                 isRequired: false,
                 isAvailable: item.status === 'available',
                 isRequested: false,
-                requestStatus: undefined
+                requestStatus: undefined,
+                readyToUse: true  // Mark as ready to use since it's in the room
               };
               
               console.log('Created new equipment object for unexpected item:', newEquipment);
@@ -477,23 +558,72 @@ export class EquipmentTrackingComponent implements OnInit {
   fallbackToLocationFiltering(): void {
     console.log('Falling back to location-based filtering...');
     
-    // Reset arrays
-    this.inRoomEquipment = [];
-    this.normalEquipment = [];
+    // Store existing equipment IDs to avoid duplicates
+    const existingEquipmentIds = new Set(
+      this.inRoomEquipment
+        .filter(e => e.equipment && e.equipment.id)
+        .map(e => e.equipment.id)
+    );
     
-    // Filter based on location string (original implementation)
-    this.inRoomEquipment = this.equipmentList.filter(e => {
+    // Filter based on location string, but only add items not already in inRoomEquipment
+    const roomEquipment = this.equipmentList.filter(e => {
       return e.equipment && e.equipment.location && 
-        e.equipment.location.toLowerCase().includes('room');
+        e.equipment.location.toLowerCase().includes('room') &&
+        (!e.equipment.id || !existingEquipmentIds.has(e.equipment.id));
     });
     
+    // Add the filtered items to our existing list (cumulative)
+    this.inRoomEquipment = [...this.inRoomEquipment, ...roomEquipment];
+    
+    // Update the normalized list to exclude anything in the in-room list
+    const inRoomIds = new Set(
+      this.inRoomEquipment
+        .filter(e => e.equipment && e.equipment.id)
+        .map(e => e.equipment.id)
+    );
+    
     this.normalEquipment = this.equipmentList.filter(e => {
-      return e.equipment && (!e.equipment.location || 
-        !e.equipment.location.toLowerCase().includes('room'));
+      return e.equipment && (!e.equipment.id || !inRoomIds.has(e.equipment.id));
     });
     
     console.log(`Filtered ${this.inRoomEquipment.length} items for in-room equipment (fallback)`);
     console.log(`Filtered ${this.normalEquipment.length} items for normal equipment (fallback)`);
   }
-
+  
+  /**
+   * Start polling for room equipment status updates
+   */
+  startPolling(): void {
+    // Stop any existing polling
+    this.stopPolling();
+    
+    console.log(`Starting auto-scan polling every ${this.pollingInterval/1000} seconds`);
+    
+    // Create a new subscription that triggers a scan at regular intervals
+    this.pollingSubscription = interval(this.pollingInterval).subscribe(() => {
+      if (!this.roomScanInProgress) { // Only scan if not already scanning
+        console.log('Auto-scanning room for equipment updates...');
+        this.scanRoom();
+      }
+    });
+  }
+  
+  /**
+   * Stop polling for room equipment status updates
+   */
+  stopPolling(): void {
+    if (this.pollingSubscription) {
+      console.log('Stopping auto-scan polling');
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+  }
+  
+  /**
+   * Clean up subscriptions when component is destroyed
+   */
+  ngOnDestroy(): void {
+    // Clean up subscriptions
+    this.stopPolling();
+  }
 }

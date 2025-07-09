@@ -64,24 +64,35 @@
                 <td>{{ item.equipment.location || 'Unknown' }}</td>
                 <td [class.status-available]="item.isAvailable || item.requestStatus === 'approved'" 
                     [class.status-missing]="!item.isAvailable && item.requestStatus !== 'approved'" 
-                    [class.status-approved]="item.requestStatus === 'approved'">
-                  <ng-container *ngIf="item.requestStatus === 'approved'">Approved</ng-container>
-                  <ng-container *ngIf="item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
+                    [class.status-approved]="item.requestStatus === 'approved'"
+                    [class.status-ready]="item.readyToUse">
+                  <ng-container *ngIf="item.readyToUse"><i class="fas fa-check-circle"></i> Ready to use</ng-container>
+                  <ng-container *ngIf="!item.readyToUse && item.requestStatus === 'approved'">Approved</ng-container>
+                  <ng-container *ngIf="!item.readyToUse && item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
                 </td>
                 <td>
-                  <button 
-                    class="request-btn" 
-                    (click)="requestEquipment(item.equipment)"
-                    [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
-                    [ngClass]="{
-                      'requested-btn': item.requestStatus === 'requested',
-                      'accepted-btn': item.requestStatus === 'approved',
-                      'rejected-btn': item.requestStatus === 'rejected',
-                      'in-use-btn': item.requestStatus === 'in_use',
-                      'returned-btn': item.requestStatus === 'returned',
-                      'maintenance-btn': item.requestStatus === 'maintenance'
-                    }"
-                  >
+                  <!-- Show 'No action needed' for equipment detected in the room -->
+                  <ng-container *ngIf="item.readyToUse">
+                    <div class="no-action-needed">
+                      <i class="fas fa-check-circle"></i> No action needed
+                    </div>
+                  </ng-container>
+                  
+                  <!-- Show action button for equipment not in the room -->
+                  <ng-container *ngIf="!item.readyToUse">
+                    <button 
+                      class="request-btn" 
+                      (click)="requestEquipment(item.equipment)"
+                      [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
+                      [ngClass]="{
+                        'requested-btn': item.requestStatus === 'requested',
+                        'accepted-btn': item.requestStatus === 'approved',
+                        'rejected-btn': item.requestStatus === 'rejected',
+                        'in-use-btn': item.requestStatus === 'in_use',
+                        'returned-btn': item.requestStatus === 'returned',
+                        'maintenance-btn': item.requestStatus === 'maintenance'
+                      }"
+                    >
                     <ng-container *ngIf="!item.requestStatus">
                       <i class="fas fa-plus-circle"></i> Request
                     </ng-container>
@@ -104,6 +115,7 @@
                       <i class="fas fa-tools"></i> Maintenance
                     </ng-container>
                   </button>
+                  </ng-container>
                 </td>
               </tr>
             </tbody>
@@ -137,24 +149,35 @@
                 <td>{{ item.equipment.location || 'Unknown' }}</td>
                 <td [class.status-available]="item.isAvailable || item.requestStatus === 'approved'" 
                     [class.status-missing]="!item.isAvailable && item.requestStatus !== 'approved'" 
-                    [class.status-approved]="item.requestStatus === 'approved'">
-                  <ng-container *ngIf="item.requestStatus === 'approved'">Approved</ng-container>
-                  <ng-container *ngIf="item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
+                    [class.status-approved]="item.requestStatus === 'approved'"
+                    [class.status-ready]="item.readyToUse">
+                  <ng-container *ngIf="item.readyToUse"><i class="fas fa-check-circle"></i> Ready to use</ng-container>
+                  <ng-container *ngIf="!item.readyToUse && item.requestStatus === 'approved'">Approved</ng-container>
+                  <ng-container *ngIf="!item.readyToUse && item.requestStatus !== 'approved'">{{ item.isAvailable ? 'Available' : 'Missing' }}</ng-container>
                 </td>
                 <td>
-                  <button 
-                    class="request-btn" 
-                    (click)="requestEquipment(item.equipment)"
-                    [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
-                    [ngClass]="{
-                      'requested-btn': item.requestStatus === 'requested',
-                      'accepted-btn': item.requestStatus === 'approved',
-                      'rejected-btn': item.requestStatus === 'rejected',
-                      'in-use-btn': item.requestStatus === 'in_use',
-                      'returned-btn': item.requestStatus === 'returned',
-                      'maintenance-btn': item.requestStatus === 'maintenance'
-                    }"
-                  >
+                  <!-- Show 'No action needed' for equipment detected in the room -->
+                  <ng-container *ngIf="item.readyToUse">
+                    <div class="no-action-needed">
+                      <i class="fas fa-check-circle"></i> No action needed
+                    </div>
+                  </ng-container>
+                  
+                  <!-- Show action button for equipment not in the room -->
+                  <ng-container *ngIf="!item.readyToUse">
+                    <button 
+                      class="request-btn" 
+                      (click)="requestEquipment(item.equipment)"
+                      [disabled]="requestInProgress || item.equipment.status === 'in_use' || item.requestStatus"
+                      [ngClass]="{
+                        'requested-btn': item.requestStatus === 'requested',
+                        'accepted-btn': item.requestStatus === 'approved',
+                        'rejected-btn': item.requestStatus === 'rejected',
+                        'in-use-btn': item.requestStatus === 'in_use',
+                        'returned-btn': item.requestStatus === 'returned',
+                        'maintenance-btn': item.requestStatus === 'maintenance'
+                      }"
+                    >
                     <ng-container *ngIf="!item.requestStatus">
                       <i class="fas fa-plus-circle"></i> Request
                     </ng-container>
@@ -177,6 +200,7 @@
                       <i class="fas fa-tools"></i> Maintenance
                     </ng-container>
                   </button>
+                  </ng-container>
                 </td>
               </tr>
             </tbody>
