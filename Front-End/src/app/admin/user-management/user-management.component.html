@@ -1,0 +1,110 @@
+<div class="user-management-container">
+  <div class="header">
+    <h2>User Management</h2>
+    <div class="role-filters">
+      <button [class.active]="selectedRoleFilter === 'all'" (click)="filterByRole('all')">All Users</button>
+      <button [class.active]="selectedRoleFilter === 'admin'" (click)="filterByRole('admin')">Admins</button>
+      <button [class.active]="selectedRoleFilter === 'doctor'" (click)="filterByRole('doctor')">Doctors</button>
+      <button [class.active]="selectedRoleFilter === 'nurse'" (click)="filterByRole('nurse')">Nurses</button>
+      <button [class.active]="selectedRoleFilter === 'maintenance'" (click)="filterByRole('maintenance')">Maintenance</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+  <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Loading users...</p>
+  </div>
+
+  <!-- User List -->
+  <div *ngIf="!editMode && !loading" class="user-list">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="users.length === 0">
+          <td colspan="6">No users found</td>
+        </tr>
+        <tr *ngFor="let user of users">
+          <td>{{ user.username }}</td>
+          <td>{{ user.first_name }} {{ user.last_name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ getRoleDisplayName(user.profile?.role || user.role || '') }}</td>
+          <td>
+            <span [class.active]="user.is_active" [class.inactive]="!user.is_active">
+              {{ user.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions">
+            <button class="edit-btn" (click)="editUser(user)" [disabled]="processingUsers[user.id]">
+              Edit
+            </button>
+            <button class="delete-btn" (click)="deleteUser(user)" [disabled]="processingUsers[user.id]">
+              Delete
+            </button>
+            <div *ngIf="processingUsers[user.id]" class="mini-spinner"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Edit User Form -->
+  <div *ngIf="editMode && selectedUser" class="edit-user-form">
+    <h3>Edit User: {{ selectedUser.username }}</h3>
+    
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" [(ngModel)]="selectedUser.username" />
+    </div>
+    
+    <div class="form-group">
+      <label for="firstName">First Name:</label>
+      <input type="text" id="firstName" [(ngModel)]="selectedUser.first_name" />
+    </div>
+    
+    <div class="form-group">
+      <label for="lastName">Last Name:</label>
+      <input type="text" id="lastName" [(ngModel)]="selectedUser.last_name" />
+    </div>
+    
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" [(ngModel)]="selectedUser.email" />
+    </div>
+    
+    <div class="form-group">
+      <label for="role">Role:</label>
+      <select id="role" [(ngModel)]="userRole">
+        <option *ngFor="let role of roleOptions" [value]="role.value">{{ role.label }}</option>
+      </select>
+    </div>
+    
+    <div class="form-group checkbox">
+      <label>
+        <input type="checkbox" [(ngModel)]="selectedUser.is_active" />
+        Active Account
+      </label>
+    </div>
+    
+    <div class="form-actions">
+      <button class="cancel-btn" (click)="cancelEdit()">Cancel</button>
+      <button class="save-btn" (click)="saveUser()" [disabled]="processingUsers[selectedUser.id]">
+        Save Changes
+        <div *ngIf="processingUsers[selectedUser.id]" class="mini-spinner"></div>
+      </button>
+    </div>
+  </div>
+</div>

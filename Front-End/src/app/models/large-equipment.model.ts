@@ -34,4 +34,5 @@ export interface SurgeryEquipment {
   isRequested: boolean;
   requestStatus?: 'requested' | 'approved' | 'rejected' | 'in_use' | 'returned' | 'maintenance';
   requestId?: number;
+  readyToUse?: boolean; // Added for equipment detected in room via scan
 }

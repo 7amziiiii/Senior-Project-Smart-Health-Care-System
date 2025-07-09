@@ -10,15 +10,17 @@ import { InstrumentService, Instrument } from '../../services/instrument.service
 import { TrayService } from '../../services/tray.service';
 import { HttpClientModule } from '@angular/common/http';
 import { SystemLogsComponent } from '../system-logs/system-logs.component';
+import { UserManagementComponent } from '../user-management/user-management.component';
 // Using alerts for notifications
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, HttpClientModule, SystemLogsComponent],
+  imports: [CommonModule, RouterModule, FormsModule, HttpClientModule, SystemLogsComponent, UserManagementComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss']
 })
+
 export class AdminDashboardComponent implements OnInit {
   // Instrument registration properties
   instrumentTypes = [
@@ -46,6 +48,7 @@ export class AdminDashboardComponent implements OnInit {
   showDashboard = false;
   showInstruments = false;
   showLogs = false;
+  showUserManagement = false;
   
   // Registration panel properties
   showInstrumentReg = false;
@@ -234,39 +237,41 @@ export class AdminDashboardComponent implements OnInit {
 
   // Navigation methods
   navigateToPanel(panel: string): void {
-    console.log(`Navigating to panel: ${panel}`);
-    
-    // Reset all panel states
+    // Hide all panels first
     this.showApprovalPanel = false;
     this.showDashboard = false;
     this.showInstruments = false;
     this.showLogs = false;
+    this.showUserManagement = false;
+    this.hideAllRegistrationForms();
     
+    // Show the selected panel
     switch(panel) {
       case 'approval':
         this.showApprovalPanel = true;
+        this.showUserManagement = true; // Show both panels
         this.loadPendingUsers();
         break;
       case 'dashboard':
-        // Redirect to the OR dashboard component
-        console.log('Navigating to OR dashboard');
-        this.router.navigate(['/dashboard']);
-        break;
-      case 'maintenance':
-        // Redirect to maintenance dashboard directly
-        this.router.navigate(['/maintenance']);
+        this.showDashboard = true;
         break;
       case 'instruments':
         this.showInstruments = true;
+        // Load data for instruments panel if needed
         break;
-      case 'equipment-requests':
-        // Show instruments panel for equipment requests
-        this.showInstruments = true;
+      case 'registration':
+        this.showInstrumentReg = true;
+        // Reset the form before showing
+        this.resetRegistrationForms();
         break;
       case 'logs':
-        // Navigate to the standalone System Logs page
-        this.router.navigate(['/system-logs']);
+        this.showLogs = true;
         break;
+      case 'users':
+        this.showUserManagement = true;
+        break;
+      default:
+        this.showDashboard = true;
     }
   }
   
@@ -318,7 +323,11 @@ export class AdminDashboardComponent implements OnInit {
   showOperationTypeRegistration(): void {
     this.hideAllRegistrationForms();
     this.showOperationTypeReg = true;
-    this.resetRegistrationForms();
+  }
+  
+  // Shows the User Management panel
+  showUserManagementPanel(): void {
+    this.navigateToPanel('users');
   }
 
   /**
@@ -330,6 +339,7 @@ export class AdminDashboardComponent implements OnInit {
     this.showTrayReg = false;
     this.showReaderReg = false;
     this.showOperationTypeReg = false;
+    this.showUserManagement = false;
   }
 
   /**
