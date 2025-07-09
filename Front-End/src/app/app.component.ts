@@ -33,8 +33,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isLoggedIn = !!this.authService.getToken();
     
     if (this.isLoggedIn) {
-      const user = this.authService.getUserData();
-      this.isAdmin = user?.is_staff || user?.is_superuser || false;
+      // Use authService's isAdmin method instead of simplified check
+      this.isAdmin = this.authService.isAdmin();
       
       // Subscribe to selected surgery for breadcrumb navigation
       const surgerySub = this.surgeryDataService.getSelectedSurgery().subscribe(surgery => {
