@@ -136,8 +136,23 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
       this.hasNewRequests = true;
     }
     
+    // Sort requests - prioritize 'requested' status at the top
+    const sortedRequests = [...requests].sort((a, b) => {
+      // Put requests with 'requested' status first
+      if (a.status === 'requested' && b.status !== 'requested') {
+        return -1;
+      } else if (a.status !== 'requested' && b.status === 'requested') {
+        return 1;
+      } else {
+        // If both have same priority level, sort by date (newer first)
+        const dateA = new Date(a.check_out_time || 0);
+        const dateB = new Date(b.check_out_time || 0);
+        return dateB.getTime() - dateA.getTime();
+      }
+    });
+    
     this.previousRequestCount = requests.length;
-    this.equipmentRequests = requests;
+    this.equipmentRequests = sortedRequests;
     this.requestsLoading = false;
     
     console.log('Processed equipment requests:', this.equipmentRequests);
@@ -167,6 +182,9 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error approving request:', error);
+        
+        // Display error to user instead of silent failure
+        alert(`Error approving request: ${error.status === 403 ? 'Permission denied' : 'Server error, please try again'}`);
       }
     });
   }
@@ -183,6 +201,12 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error rejecting request:', error);
+        
+        if (error.status === 403) {
+          alert('Permission denied');
+        } else {
+          alert('Server error, please try again');
+        }
       }
     });
   }

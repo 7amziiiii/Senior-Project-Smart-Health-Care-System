@@ -87,11 +87,9 @@
                   </button>
                 </div>
                 
-                <!-- Actions for approved equipment -->
-                <div *ngIf="checkStatus(request, 'approved')" class="action-group">
-                  <button class="btn-primary" *ngIf="request.id !== undefined" (click)="fulfillRequest(request.id)">
-                    <i class="fas fa-truck-loading"></i> Mark as Delivered
-                  </button>
+                <!-- Status indicator for approved equipment -->
+                <div *ngIf="checkStatus(request, 'approved')" class="action-complete approved">
+                  <i class="fas fa-check-circle"></i> Request approved
                 </div>
                 
                 <!-- Status indicators for completed actions -->

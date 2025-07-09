@@ -1,7 +1,7 @@
 from rest_framework import generics
 from ...models.operation_session import OperationSession
 from ...serializers.operation_session_serializer import OperationSessionListSerializer, OperationSessionDetailSerializer
-from ...permissions.role_permissions import IsAdmin, IsDoctorOrNurse
+from ...permissions.role_permissions import IsAdmin, IsDoctorOrNurse, IsMaintenance
 
 
 class OperationSessionListCreateView(generics.ListCreateAPIView):
@@ -9,7 +9,7 @@ class OperationSessionListCreateView(generics.ListCreateAPIView):
     API view to retrieve list of operation sessions or create a new one
     Accessible by admin, doctors, and nurses.
     """
-    permission_classes = [IsDoctorOrNurse | IsAdmin]
+    permission_classes = [IsDoctorOrNurse | IsAdmin | IsMaintenance]
     queryset = OperationSession.objects.all()
     
     def get_serializer_class(self):
