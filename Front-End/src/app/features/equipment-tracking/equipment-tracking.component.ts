@@ -57,6 +57,7 @@ export class EquipmentTrackingComponent implements OnInit, OnDestroy {
   // Auto-scan properties
   private pollingSubscription: Subscription | null = null;
   private pollingInterval = 3000; // 3 seconds
+  lastScanTime: Date | null = null; // Tracks the last time a room scan was performed
 
   constructor(
     private route: ActivatedRoute,
@@ -71,11 +72,10 @@ export class EquipmentTrackingComponent implements OnInit, OnDestroy {
     console.log('Equipment Tracking initialized with surgery ID:', this.surgeryId);
     this.loadSurgeryEquipment();
     this.loadSurgeryName();
-    // Get the room associated with the surgery and scan it
+    // Get the room associated with the surgery and scan it once
     this.loadRoomAndScan();
     
-    // Start auto-scanning
-    this.startPolling();
+    // No auto-scanning - just a single scan on page load
   }
 
   loadSurgeryName(): void {
@@ -384,6 +384,7 @@ export class EquipmentTrackingComponent implements OnInit, OnDestroy {
 
     console.log('Starting room scan...');
     this.roomScanInProgress = true;
+    this.lastScanTime = new Date();
     
     // Before scanning, make sure all existing inRoomEquipment is marked as ready to use
     if (this.inRoomEquipment && this.inRoomEquipment.length > 0) {
@@ -400,6 +401,9 @@ export class EquipmentTrackingComponent implements OnInit, OnDestroy {
     );
     
     console.log('Existing equipment IDs in room:', Array.from(existingEquipmentIds));
+    
+    // Keep track of detected equipment in this scan for logging purposes
+    const newlyDetectedIds = new Set<number>();
     
     // Scan duration of 3 seconds
     this.equipmentService.scanRoom(this.roomId, 3).subscribe({

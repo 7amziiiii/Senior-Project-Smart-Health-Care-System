@@ -40,6 +40,14 @@
       </div>
     </div>
 
+    <!-- Hidden information about scanning status -->
+    <div style="display: none;">
+      <span *ngIf="roomScanInProgress">Scanning in progress</span>
+      <span *ngIf="!roomScanInProgress && roomScanComplete">Scan Complete</span>
+      <div *ngIf="lastScanTime">Last scan: {{ lastScanTime | date:'medium' }}</div>
+      <div *ngIf="roomId">Room ID: {{ roomId }}</div>
+    </div>
+    
     <div class="equipment-table-container">
       <!-- Equipment in the room -->
       <div class="equipment-section">
