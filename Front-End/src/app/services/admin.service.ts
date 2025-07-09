@@ -15,22 +15,13 @@ export interface PendingUser {
   is_active: boolean;
 }
 
-export interface User extends PendingUser {
-  profile?: {
-    role: string;
-    approval_status: string;
-  };
-}
-
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
   private apiUrl = environment.apiUrl;
-  // Set to public and explicitly false to ensure real API calls
-  public simulationMode = false; 
+  private simulationMode = false; // Set to false to use the real backend API
   private pendingUsers: PendingUser[] = [];
-  private users: User[] = [];
 
   constructor(private http: HttpClient) { }
 
@@ -153,132 +144,5 @@ export class AdminService {
         }
       }
     );
-  }
-  
-  /**
-   * Get all users in the system
-   * @param roleFilter Optional role to filter by
-   */
-  getAllUsers(roleFilter?: string): Observable<User[]> {
-    if (this.simulationMode) {
-      console.log('Simulation mode: Returning mock users');
-      
-      // If we don't have any users in our simulated store yet, create some mock ones
-      if (this.users.length === 0) {
-        this.users = [
-          {
-            id: 1,
-            username: 'admin_user',
-            email: 'admin@example.com',
-            first_name: 'Admin',
-            last_name: 'User',
-            role: 'Admin',
-            date_joined: new Date().toISOString(),
-            is_active: true,
-            profile: { role: 'admin', approval_status: 'approved' }
-          },
-          {
-            id: 2,
-            username: 'doctor_user',
-            email: 'doctor@example.com',
-            first_name: 'Doctor',
-            last_name: 'User',
-            role: 'Doctor',
-            date_joined: new Date().toISOString(),
-            is_active: true,
-            profile: { role: 'doctor', approval_status: 'approved' }
-          },
-          {
-            id: 3,
-            username: 'nurse_user',
-            email: 'nurse@example.com',
-            first_name: 'Nurse',
-            last_name: 'User',
-            role: 'Nurse',
-            date_joined: new Date().toISOString(),
-            is_active: true,
-            profile: { role: 'nurse', approval_status: 'approved' }
-          }
-        ];
-      }
-      
-      if (roleFilter && roleFilter !== 'all') {
-        return of(this.users.filter(u => u.profile?.role === roleFilter.toLowerCase()));
-      }
-      return of(this.users);
-    }
-    
-    let url = `${this.apiUrl}/auth/users/`;
-    if (roleFilter && roleFilter !== 'all') {
-      url += `?role=${roleFilter}`;
-    }
-    
-    return this.http.get<User[]>(url, {
-      withCredentials: true // Include cookies for authentication
-    });
-  }
-  
-  /**
-   * Get a user by ID
-   * @param userId The user ID to get
-   */
-  getUser(userId: number): Observable<User> {
-    if (this.simulationMode) {
-      const user = this.users.find(u => u.id === userId);
-      return user ? of(user) : throwError(() => new Error('User not found'));
-    }
-    
-    return this.http.get<User>(`${this.apiUrl}/auth/users/${userId}/`, {
-      withCredentials: true
-    });
-  }
-  
-  /**
-   * Update a user
-   * @param userId The user ID to update
-   * @param userData The user data to update
-   */
-  updateUser(userId: number, userData: Partial<User>): Observable<User> {
-    if (this.simulationMode) {
-      const index = this.users.findIndex(u => u.id === userId);
-      if (index === -1) {
-        return throwError(() => new Error('User not found'));
-      }
-      
-      this.users[index] = { ...this.users[index], ...userData };
-      return of(this.users[index]);
-    }
-    
-    return this.http.patch<User>(`${this.apiUrl}/auth/users/${userId}/`, userData, {
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
-  }
-  
-  /**
-   * Delete a user
-   * @param userId The user ID to delete
-   */
-  deleteUser(userId: number): Observable<any> {
-    if (this.simulationMode) {
-      const index = this.users.findIndex(u => u.id === userId);
-      if (index === -1) {
-        return throwError(() => new Error('User not found'));
-      }
-      
-      const username = this.users[index].username;
-      this.users.splice(index, 1);
-      return of({ message: `User ${username} has been deleted successfully.` });
-    }
-    
-    return this.http.delete<any>(`${this.apiUrl}/auth/users/${userId}/`, {
-      withCredentials: true,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
   }
 }
