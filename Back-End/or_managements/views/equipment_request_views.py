@@ -36,7 +36,7 @@ class EquipmentRequestViewSet(viewsets.ModelViewSet):
         - Update/Delete: Admin or Maintenance
         """
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAdmin | IsMaintenance | IsDoctor | IsNurse]
+            permission_classes = [IsAdmin | IsMaintenance]
         elif self.action == 'create':
             permission_classes = [IsAdmin | IsDoctor | IsNurse ]
         else:
