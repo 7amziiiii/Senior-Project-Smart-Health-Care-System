@@ -1,111 +1,59 @@
 {
-<<<<<<< HEAD
-  "hash": "df0cff28",
-  "configHash": "b88aa651",
-  "lockfileHash": "1c8757f4",
-  "browserHash": "e8f56dae",
-=======
   "hash": "ad922067",
   "configHash": "f556ac11",
   "lockfileHash": "12bbc01c",
   "browserHash": "21899d36",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
   "optimized": {
     "@angular/common": {
       "src": "../../../../../../node_modules/@angular/common/fesm2022/common.mjs",
       "file": "@angular_common.js",
-<<<<<<< HEAD
-      "fileHash": "e9c410fc",
-=======
       "fileHash": "cc916a59",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "@angular/common/http": {
       "src": "../../../../../../node_modules/@angular/common/fesm2022/http.mjs",
       "file": "@angular_common_http.js",
-<<<<<<< HEAD
-      "fileHash": "3dba8455",
-=======
       "fileHash": "d3fbfa04",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "@angular/core": {
       "src": "../../../../../../node_modules/@angular/core/fesm2022/core.mjs",
       "file": "@angular_core.js",
-<<<<<<< HEAD
-      "fileHash": "8e24cf62",
-=======
       "fileHash": "4997066e",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "@angular/forms": {
       "src": "../../../../../../node_modules/@angular/forms/fesm2022/forms.mjs",
       "file": "@angular_forms.js",
-<<<<<<< HEAD
-      "fileHash": "214729d2",
-=======
       "fileHash": "116d1cfe",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "@angular/platform-browser": {
       "src": "../../../../../../node_modules/@angular/platform-browser/fesm2022/platform-browser.mjs",
       "file": "@angular_platform-browser.js",
-<<<<<<< HEAD
-      "fileHash": "dd190977",
-=======
       "fileHash": "fabbe818",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "@angular/router": {
       "src": "../../../../../../node_modules/@angular/router/fesm2022/router.mjs",
       "file": "@angular_router.js",
-<<<<<<< HEAD
-      "fileHash": "34ef9229",
-=======
       "fileHash": "71b31e03",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "rxjs": {
       "src": "../../../../../../node_modules/rxjs/dist/esm5/index.js",
       "file": "rxjs.js",
-<<<<<<< HEAD
-      "fileHash": "f6c406e6",
-=======
       "fileHash": "fd469a11",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     },
     "rxjs/operators": {
       "src": "../../../../../../node_modules/rxjs/dist/esm5/operators/index.js",
       "file": "rxjs_operators.js",
-<<<<<<< HEAD
-      "fileHash": "c1533d68",
-=======
       "fileHash": "c978d267",
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
       "needsInterop": false
     }
   },
   "chunks": {
-<<<<<<< HEAD
-    "chunk-6AMZB3UC": {
-      "file": "chunk-6AMZB3UC.js"
-    },
-    "chunk-MNSBLXA5": {
-      "file": "chunk-MNSBLXA5.js"
-    },
-    "chunk-O4HOMCSG": {
-      "file": "chunk-O4HOMCSG.js"
-    },
-    "chunk-BPZ7AUX4": {
-      "file": "chunk-BPZ7AUX4.js"
-=======
     "chunk-FJL5M3GE": {
       "file": "chunk-FJL5M3GE.js"
     },
@@ -117,7 +65,6 @@
     },
     "chunk-PHO26LGY": {
       "file": "chunk-PHO26LGY.js"
->>>>>>> parent of 0f27b4e (Merge branch 'main' of https://github.com/7amziiiii/Final_Senior)
     },
     "chunk-6SZJNWHU": {
       "file": "chunk-6SZJNWHU.js"
