@@ -3,72 +3,13 @@
   <header>
     <div class="header-content">
       <div class="header-left">
-        <button class="back-button" (click)="goBack()">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
         <h1>Predictive Maintenance</h1>
       </div>
       <div class="header-right">
-        <div class="notification-area">
-          <button class="notification-button" (click)="toggleNotifications()">
-            <i class="fas fa-bell"></i>
-            <span *ngIf="hasNewRequests" class="notification-badge">{{ requestedEquipmentCount }}</span>
-          </button>
-          
-          <!-- Notification dropdown -->
-          <div *ngIf="showNotifications" class="notification-dropdown">
-            <div class="notification-header">
-              <h3>Equipment Requests</h3>
-              <button class="close-button" (click)="toggleNotifications()">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <div class="notification-list">
-              <div *ngIf="equipmentRequests.length === 0" class="empty-notification">
-                <p>No equipment requests at this time.</p>
-              </div>
-              
-              <div *ngFor="let request of equipmentRequests" 
-                   [ngClass]="{'notification-item': true, 'new-request': request.status === 'requested'}">
-                <div class="notification-content">
-                  <div class="notification-title">
-                    <strong>{{ request.equipment.name }}</strong>
-                    <span [ngClass]="{
-                      'status-badge': true,
-                      'requested': request.status === 'requested',
-                      'in-use': request.status === 'in_use',
-                      'returned': request.status === 'returned',
-                      'maintenance': request.status === 'maintenance'
-                    }">{{ request.status }}</span>
-                  </div>
-                  <div class="notification-details">
-                    <p>Surgery ID: {{ request.operation_session }}</p>
-                    <p>Equipment ID: {{ request.equipment.equipment_id }}</p>
-                    <p>Request Time: {{ request.check_out_time | date:'short' }}</p>
-                  </div>
-                  <div *ngIf="request.status === 'requested'" class="notification-actions">
-                    <button class="fulfill-button" *ngIf="request.id !== undefined" (click)="fulfillRequest(request.id)">
-                      <i class="fas fa-check"></i> Fulfill Request
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
         <div class="date-display">
-          <span>{{ today | date:'MMM d, y' }}</span>
+          <i class="fas fa-calendar-alt"></i>
+          <span>{{ today | date:'EEEE, MMM d, y' }}</span>
         </div>
-      </div>
-    </div>
-    
-    <!-- Breadcrumb Navigation -->
-    <div class="status-bar">
-      <div class="breadcrumbs">
-        <span (click)="goBack()">Dashboard</span> &gt; 
-        <span class="current">Predictive Maintenance</span>
       </div>
     </div>
   </header>

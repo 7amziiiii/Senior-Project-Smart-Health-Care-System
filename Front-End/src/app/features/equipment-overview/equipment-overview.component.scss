@@ -1,66 +1,76 @@
 // Equipment Overview Component Styles
 
-// Variables (matching maintenance dashboard)
-@use 'sass:color';
-
-$primary-color: #2c3e50;
-$secondary-color: #3498db;
-$accent-color: #2ecc71;
-$warning-color: #e74c3c;
-$text-color: #333;
-$light-bg: #f8f9fa;
-$card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+// Color Variables
+$primary-color: #1976d2; // Blue primary color
+$primary-dark: #1565c0;
+$primary-light: #bbdefb;
+$accent-color: #4caf50; // Green accent
+$accent-dark: #388e3c;
+$warning-color: #f44336; // Red for warnings
+$warning-light: #ffcdd2;
+$text-color: #212121;
+$text-secondary: #757575;
+$border-color: #e0e0e0;
+$background-color: #f5f7fa;
+$white: #ffffff;
+$shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
 $border-radius: 8px;
-$light-border: 1px solid #dee2e6;
+
+// Additional variables
+$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$secondary-color: #03a9f4;
+$light-border: 1px solid #e0e0e0;
 
 .equipment-overview-container {
   width: 100%;
   min-height: 100vh;
-  background-color: $light-bg;
+  background-color: $background-color;
   font-family: 'Arial', sans-serif;
   
   // Header styles
   header {
-    background-color: $primary-color;
-    padding: 20px 30px;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
     
     .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
       
       .header-left {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 1.5rem;
         
         h1 {
           margin: 0;
-          font-size: 24px;
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #333;
         }
         
         .back-button {
-          background-color: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.5);
-          color: white;
-          padding: 8px 12px;
+          background-color: #f5f5f5;
+          border: none;
           border-radius: 4px;
-          cursor: pointer;
+          padding: 0.5rem 0.75rem;
           display: flex;
           align-items: center;
-          gap: 8px;
-          transition: all 0.2s ease;
+          gap: 0.5rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          color: #333;
           
           &:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: #e0e0e0;
           }
           
           i {
-            font-size: 14px;
+            font-size: 0.875rem;
           }
         }
       }
@@ -71,7 +81,7 @@ $light-border: 1px solid #dee2e6;
   .main-content {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 30px 20px;
+    padding: 20px;
     
     // Equipment list view
     .equipment-list-view {
@@ -79,57 +89,70 @@ $light-border: 1px solid #dee2e6;
       // Filters and search bar
       .filters-bar {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: $border-radius;
+        box-shadow: $card-shadow;
         
         .search-box {
-          position: relative;
           flex: 1;
-          max-width: 400px;
-          
-          i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-          }
+          min-width: 250px;
+          position: relative;
           
           input {
             width: 100%;
-            padding: 10px 10px 10px 35px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid $border-color;
+            border-radius: $border-radius;
+            font-size: 0.9rem;
+            transition: all 0.2s;
             
             &:focus {
               outline: none;
-              border-color: $secondary-color;
-              box-shadow: 0 0 0 2px rgba($secondary-color, 0.25);
+              border-color: $primary-color;
+              box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
             }
+          }
+          
+          i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: $text-secondary;
           }
         }
         
         .status-filter {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 0.75rem;
           
           label {
+            font-size: 0.9rem;
             color: $text-color;
             font-weight: 500;
           }
           
           select {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            border: 1px solid $border-color;
+            border-radius: $border-radius;
             background-color: white;
+            font-size: 0.9rem;
+            min-width: 180px;
+            transition: all 0.2s;
+            color: $text-color;
+            cursor: pointer;
             
             &:focus {
               outline: none;
-              border-color: $secondary-color;
-              box-shadow: 0 0 0 2px rgba($secondary-color, 0.25);
+              border-color: $primary-color;
+              box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
             }
           }
         }
@@ -267,24 +290,24 @@ $light-border: 1px solid #dee2e6;
             margin-bottom: 10px;
           }
           
-          .detail-grid {
+          // Equipment cards grid
+          .equipment-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
             
-            .detail-item {
-              display: flex;
-              flex-direction: column;
-              gap: 5px;
+            .equipment-card {
+              background-color: white;
+              border-radius: $border-radius;
+              box-shadow: $card-shadow;
+              overflow: hidden;
+              transition: transform 0.2s ease, box-shadow 0.2s ease;
+              cursor: pointer;
+              border: 1px solid $border-color;
               
-              .label {
-                font-size: 14px;
-                color: #6c757d;
-              }
-              
-              .value {
-                font-size: 16px;
-                font-weight: 500;
+              &:hover {
+                transform: translateY(-4px);
+                box-shadow: $shadow-hover;
               }
             }
           }
@@ -335,7 +358,7 @@ $light-border: 1px solid #dee2e6;
               transition: all 0.2s ease;
               
               &:hover {
-                background-color: color.adjust($secondary-color, $lightness: -10%);
+                background-color: #0286c5; // Slightly darker secondary color
               }
               
               &:disabled {

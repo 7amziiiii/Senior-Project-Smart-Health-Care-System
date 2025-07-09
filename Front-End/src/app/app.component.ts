@@ -18,6 +18,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isAdmin = false;
   currentFeature: string | null = null;
   isAuthPage = false;
+  isMaintenanceRoute = false;
   selectedSurgery: Surgery | null = null;
   private subscriptions: Subscription[] = [];
   
@@ -54,6 +55,11 @@ export class AppComponent implements OnInit, OnDestroy {
       // Check if on auth page (login or register)
       this.isAuthPage = url.includes('/login') || url.includes('/register');
       
+      // Check if on maintenance routes
+      this.isMaintenanceRoute = url.includes('/maintenance') || 
+                               url.includes('/equipment-overview') || 
+                               url.includes('/predictive-maintenance');
+      
       // Update currentFeature based on URL
       if (url.includes('/dashboard') || url === '/') {
         this.currentFeature = 'OR Dashboard';
@@ -63,6 +69,12 @@ export class AppComponent implements OnInit, OnDestroy {
         this.currentFeature = 'Outbound Tracking';
       } else if (url.includes('/large-equipment-tracking')) {
         this.currentFeature = 'Large Equipment Tracking';
+      } else if (url.includes('/maintenance')) {
+        this.currentFeature = 'Maintenance Dashboard';
+      } else if (url.includes('/equipment-overview')) {
+        this.currentFeature = 'Equipment Overview';
+      } else if (url.includes('/predictive-maintenance')) {
+        this.currentFeature = 'Predictive Maintenance';
       } else {
         this.currentFeature = null;
       }
@@ -84,8 +96,18 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   
   navigateBack() {
-    // If we're in a feature, go back to the feature selection for this surgery
-    if (this.currentFeature && this.currentFeature !== 'OR Dashboard') {
+    // If we're in a maintenance sub-feature, go back to main maintenance dashboard
+    if (this.isMaintenanceRoute && this.currentFeature && this.currentFeature !== 'Maintenance Dashboard') {
+      this.router.navigate(['/maintenance']);
+      return;
+    }
+    // If we're in the main maintenance dashboard (as admin), go back to admin dashboard
+    else if (this.isMaintenanceRoute && this.currentFeature === 'Maintenance Dashboard' && this.isAdmin) {
+      this.router.navigate(['/admin']);
+      return;
+    }
+    // If we're in an OR feature, go back to feature selection for this surgery
+    else if (!this.isMaintenanceRoute && this.currentFeature && this.currentFeature !== 'OR Dashboard') {
       // Navigate back to dashboard with the surgery still selected
       this.router.navigate(['/dashboard'], { 
         queryParams: { 
@@ -95,7 +117,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
     } 
     // If we're in the surgery selection view (dashboard with a selected surgery)
-    else if (this.selectedSurgery && this.currentFeature === 'OR Dashboard') {
+    else if (!this.isMaintenanceRoute && this.selectedSurgery && this.currentFeature === 'OR Dashboard') {
       // Clear selected surgery and go back to surgeries list
       this.selectedSurgery = null;
       this.surgeryDataService.setSelectedSurgery(null);
