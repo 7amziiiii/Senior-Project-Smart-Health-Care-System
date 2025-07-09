@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface PendingUser {
@@ -15,12 +15,29 @@ export interface PendingUser {
   is_active: boolean;
 }
 
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile?: {
+    role: string;
+    approved_status: string;
+    approved_by?: number;
+    approval_date?: string;
+  };
+  date_joined?: string;
+  last_login?: string;
+  is_active: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
   private apiUrl = environment.apiUrl;
-  private simulationMode = false; // Set to false to use the real backend API
+  private simulationMode = false; // Always false to use real backend API
   private pendingUsers: PendingUser[] = [];
 
   constructor(private http: HttpClient) { }
@@ -143,6 +160,81 @@ export class AdminService {
           'X-Requested-With': 'XMLHttpRequest', // Helps with CSRF protection
         }
       }
+    );
+  }
+
+  /**
+   * Get all users in the system
+   * Uses our new backend endpoint for admin user management
+   */
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/auth/users/`, {
+      withCredentials: true
+    }).pipe(
+      catchError(err => {
+        console.error('Error fetching all users:', err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Get a single user by ID
+   * @param userId The user ID to fetch
+   */
+  getUser(userId: number): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/auth/users/${userId}/`, {
+      withCredentials: true
+    }).pipe(
+      catchError(err => {
+        console.error(`Error fetching user ${userId}:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Update a user's information
+   * @param userId The user ID to update
+   * @param userData The updated user data
+   */
+  updateUser(userId: number, userData: any): Observable<User> {
+    return this.http.put<User>(
+      `${this.apiUrl}/auth/users/${userId}/`, 
+      userData,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    ).pipe(
+      catchError(err => {
+        console.error(`Error updating user ${userId}:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /**
+   * Delete a user
+   * @param userId The user ID to delete
+   */
+  deleteUser(userId: number): Observable<any> {
+    return this.http.delete<any>(
+      `${this.apiUrl}/auth/users/${userId}/`,
+      {
+        withCredentials: true,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    ).pipe(
+      catchError(err => {
+        console.error(`Error deleting user ${userId}:`, err);
+        return throwError(() => err);
+      })
     );
   }
 }

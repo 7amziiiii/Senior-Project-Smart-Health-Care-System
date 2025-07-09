@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { AdminService, PendingUser } from '../../services/admin.service';
+import { AdminService, PendingUser, User } from '../../services/admin.service';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { FormsModule } from '@angular/forms';
@@ -36,10 +36,23 @@ export class AdminDashboardComponent implements OnInit {
   editMode = false;
   // User approval panel properties
   pendingUsers: PendingUser[] = [];
+  allUsers: User[] = [];
   loading = false;
   error = '';
   successMessage = '';
   processingUsers: { [key: number]: boolean } = {};
+  editingUser: User | null = null;
+  confirmDelete = false;
+  deleteUserId: number | null = null;
+  newPassword: string = ''; // Property for password update
+  
+  // Pagination properties
+  currentPage = 1;
+  totalPages = 1;
+  
+  // Filter properties
+  roleFilter = '';
+  searchFilter = '';
   
   // Navigation properties
   showApprovalPanel = false;
@@ -194,6 +207,7 @@ export class AdminDashboardComponent implements OnInit {
     // Load any necessary data for the dashboard
     this.loadPendingUsers();
     this.loadAvailableTrays();
+    this.loadAllUsers(); // Load all users for the admin table
     
     console.log('Admin dashboard initialized with main menu view');
   }
@@ -666,6 +680,240 @@ export class AdminDashboardComponent implements OnInit {
         error: (err) => {
           console.error('Error fetching pending users:', err);
           this.error = 'Failed to load pending users. Please try again.';
+        }
+      });
+  }
+  
+  /**
+   * Load all users from the backend
+   */
+  loadAllUsers(): void {
+    this.loading = true;
+    this.error = '';
+    
+    console.log('Loading all users...');
+    this.adminService.getAllUsers()
+      .pipe(finalize(() => {
+        this.loading = false;
+      }))
+      .subscribe({
+        next: (users) => {
+          console.log('Received all users:', users);
+          this.allUsers = users;
+          // Calculate total pages based on 10 users per page
+          this.totalPages = Math.ceil(users.length / 10);
+        },
+        error: (err) => {
+          console.error('Error fetching all users:', err);
+          this.error = 'Failed to load users. Please try again.';
+        }
+      });
+  }
+  
+  /**
+   * Apply role filter to users list
+   */
+  applyRoleFilter(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.roleFilter = select.value;
+    this.currentPage = 1; // Reset to first page when filtering
+  }
+  
+  /**
+   * Apply search filter to users list
+   */
+  applySearchFilter(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchFilter = input.value.toLowerCase();
+    this.currentPage = 1; // Reset to first page when filtering
+  }
+  
+  /**
+   * Get filtered users based on current filter settings
+   */
+  getFilteredUsers(): User[] {
+    return this.allUsers.filter(user => {
+      // Apply role filter if selected
+      if (this.roleFilter && user.profile) {
+        if (user.profile.role.toLowerCase() !== this.roleFilter.toLowerCase()) {
+          return false;
+        }
+      }
+      
+      // Apply search filter if entered
+      if (this.searchFilter) {
+        const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+        const email = user.email.toLowerCase();
+        const username = user.username.toLowerCase();
+        
+        if (!fullName.includes(this.searchFilter) && 
+            !email.includes(this.searchFilter) && 
+            !username.includes(this.searchFilter)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Get paginated users for current page
+   */
+  getPaginatedUsers(): User[] {
+    const filteredUsers = this.getFilteredUsers();
+    const startIndex = (this.currentPage - 1) * 10;
+    return filteredUsers.slice(startIndex, startIndex + 10);
+  }
+  
+  /**
+   * Get total number of pages based on filtered users
+   */
+  getTotalPages(): number {
+    return Math.ceil(this.getFilteredUsers().length / 10) || 1;
+  }
+  
+  /**
+   * Navigate to previous page
+   */
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+  
+  /**
+   * Navigate to next page
+   */
+  nextPage(): void {
+    const filteredUsers = this.getFilteredUsers();
+    const totalFilteredPages = Math.ceil(filteredUsers.length / 10);
+    if (this.currentPage < totalFilteredPages) {
+      this.currentPage++;
+    }
+  }
+  
+  /**
+   * Format date for display
+   */
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  /**
+   * Open edit user form
+   */
+  editUser(user: User): void {
+    this.editingUser = {...user};
+    
+    // Ensure profile object exists to avoid undefined errors in two-way binding
+    if (!this.editingUser.profile) {
+      this.editingUser.profile = {
+        role: 'nurse', // Default role
+        approved_status: 'approved'
+      };
+    }
+  }
+  
+  /**
+   * Cancel editing user
+   */
+  cancelEdit(): void {
+    this.editingUser = null;
+  }
+  
+  /**
+   * Save edited user
+   */
+  saveUser(): void {
+    if (!this.editingUser) return;
+    
+    this.loading = true;
+    this.error = '';
+    this.successMessage = '';
+    
+    // Create a copy of the user data to send to the backend
+    // Use type assertion to allow adding password property
+    const userData: any = {...this.editingUser};
+    
+    // Add password only if it was entered
+    if (this.newPassword && this.newPassword.trim() !== '') {
+      userData.password = this.newPassword;
+    }
+    
+    this.adminService.updateUser(this.editingUser.id, userData)
+      .pipe(finalize(() => {
+        this.loading = false;
+        this.newPassword = ''; // Clear the password field after save
+      }))
+      .subscribe({
+        next: (updatedUser) => {
+          // Update user in the local array
+          const index = this.allUsers.findIndex(u => u.id === updatedUser.id);
+          if (index !== -1) {
+            this.allUsers[index] = updatedUser;
+          }
+          
+          this.successMessage = `User ${updatedUser.username} has been updated successfully.`;
+          this.editingUser = null;
+        },
+        error: (err) => {
+          console.error('Error updating user:', err);
+          this.error = 'Failed to update user. Please try again.';
+        }
+      });
+  }
+  
+  /**
+   * Prepare to delete user
+   */
+  prepareDeleteUser(userId: number): void {
+    this.deleteUserId = userId;
+    this.confirmDelete = true;
+  }
+  
+  /**
+   * Cancel delete user
+   */
+  cancelDelete(): void {
+    this.deleteUserId = null;
+    this.confirmDelete = false;
+  }
+  
+  /**
+   * Confirm and delete user
+   */
+  confirmDeleteUser(): void {
+    if (!this.deleteUserId) return;
+    
+    this.loading = true;
+    this.error = '';
+    this.successMessage = '';
+    
+    this.adminService.deleteUser(this.deleteUserId)
+      .pipe(finalize(() => {
+        this.loading = false;
+        this.confirmDelete = false;
+      }))
+      .subscribe({
+        next: () => {
+          // Remove user from local array
+          this.allUsers = this.allUsers.filter(u => u.id !== this.deleteUserId);
+          this.successMessage = 'User has been deleted successfully.';
+          this.deleteUserId = null;
+        },
+        error: (err) => {
+          console.error('Error deleting user:', err);
+          this.error = 'Failed to delete user. Please try again.';
+          this.deleteUserId = null;
         }
       });
   }
