@@ -1,35 +1,17 @@
 <div class="maintenance-dashboard">
-  <!-- Header -->
-  <header>
-    <div class="header-content">
-      <div class="header-left">
-        <button *ngIf="isAdmin" class="back-button" (click)="goBack()">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
-        <h1>Maintenance Dashboard</h1>
-      </div>
-      <div class="header-right">
-        <span class="user-name">{{ username }}</span>
-        <button class="logout-button" (click)="logout()">
-          <i class="fas fa-sign-out-alt"></i>
-          Logout
-        </button>
-      </div>
-    </div>
-  </header>
-  
-  <!-- Breadcrumb Navigation -->
-  <div class="status-bar">
-    <div class="breadcrumbs">
-      <span class="current">Maintenance Dashboard</span>
-    </div>
-  </div>
 
   <!-- Main Content -->
   <div class="dashboard-content">
     <div class="content-header">
-      <h2>Hospital Equipment Management</h2>
-      <p>Monitor equipment status, handle maintenance requests, and access predictive maintenance analytics</p>
+      <div class="title-section">
+        <h2>Hospital Equipment Management</h2>
+        <p>Monitor equipment status and access predictive maintenance analytics</p>
+      </div>
+      <div class="actions-section">
+        <button class="refresh-btn" (click)="refreshAllData()">
+          <i class="fas fa-sync-alt"></i> Refresh Data
+        </button>
+      </div>
     </div>
 
     <!-- Dashboard Grid Layout -->
@@ -37,15 +19,10 @@
       <!-- Left Column - Equipment Requests -->
       <section class="equipment-requests card">
         <div class="card-header">
-          <h3>
+          <div class="header-title">
             <i class="fas fa-clipboard-list"></i>
-            Equipment Requests
-          </h3>
-          <span class="badge" *ngIf="hasNewRequests">New</span>
-          <div class="header-actions">
-            <button class="btn-refresh" (click)="loadPendingRequests()">
-              <i class="fa fa-sync"></i> Refresh
-            </button>
+            <h3>Equipment Requests</h3>
+            <span class="badge" *ngIf="hasNewRequests">New</span>
           </div>
         </div>
         
@@ -58,11 +35,9 @@
           
           <!-- Empty state -->
           <div *ngIf="!requestsLoading && equipmentRequests.length === 0" class="empty-state">
-            <i class="fa fa-info-circle"></i>
+            <i class="fas fa-inbox"></i>
             <span>No pending equipment requests at this time.</span>
-            <button class="btn btn-refresh" (click)="loadPendingRequests()">
-              <i class="fa fa-sync"></i> Refresh
-            </button>
+            <p class="empty-note">New requests will appear here automatically</p>
           </div>
           
           <!-- Request List -->
@@ -135,25 +110,33 @@
 
       <!-- Right Column - Tools & Navigation -->
       <div class="tools-column">
-        <!-- Tools Section -->
-        <section class="maintenance-tools card">
+        <!-- Tools Section - Maintenance Features -->
+        <section class="card maintenance-features">
           <div class="card-header">
             <h3>
               <i class="fas fa-tools"></i>
-              Maintenance Tools
+              Maintenance Features
             </h3>
           </div>
           <div class="card-body">
-            <div class="tools-grid">
-              <div *ngFor="let feature of features" 
-                   class="tool-card" 
-                   (click)="navigateToFeature(feature.id)">
-                <div class="tool-icon">
-                  <i class="fas {{ feature.icon }}"></i>
+            <div class="features-grid">
+              <div class="feature-card" (click)="navigateToFeature('equipment-overview')">
+                <div class="feature-icon">
+                  <i class="fas fa-tools"></i>
                 </div>
-                <div class="tool-content">
-                  <h4>{{ feature.title }}</h4>
-                  <p>{{ feature.description }}</p>
+                <div class="feature-content">
+                  <h4>Equipment Overview</h4>
+                  <p>Monitor all hospital equipment status, location, and maintenance needs</p>
+                </div>
+              </div>
+              
+              <div class="feature-card" (click)="navigateToFeature('predictive-maintenance')">
+                <div class="feature-icon">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-content">
+                  <h4>Predictive Maintenance</h4>
+                  <p>AI-powered maintenance predictions and recommendations</p>
                 </div>
               </div>
             </div>

@@ -84,6 +84,21 @@ export class MaintenanceDashboardComponent implements OnInit, OnDestroy {
     });
   }
   
+  /**
+   * Refresh all dashboard data - triggered by the global refresh button
+   */
+  refreshAllData(): void {
+    console.log('Refreshing all maintenance dashboard data...');
+    // Reset new requests indicator
+    this.hasNewRequests = false;
+    
+    // Reload equipment requests
+    this.loadPendingRequests();
+    
+    // Add additional data refresh calls here as needed
+    // For example, if there's equipment status data or other metrics to refresh
+  }
+  
   ngOnDestroy(): void {
     // Clean up subscriptions
     if (this.requestsSubscription) {

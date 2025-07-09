@@ -33,22 +33,24 @@
       </button>
     </div>
     <ol class="breadcrumb-list">
-      <!-- First level: OR Dashboard -->
+      <!-- First level: Dashboard (OR or Maintenance) -->
       <li class="breadcrumb-item">
-        <a routerLink="/dashboard">
-          OR Dashboard
+        <a [routerLink]="isMaintenanceRoute ? '/maintenance' : '/dashboard'">
+          {{ isMaintenanceRoute ? 'Maintenance Dashboard' : 'OR Dashboard' }}
         </a>
       </li>
       
-      <!-- Second level: Surgery Name (if selected) -->
-      <li class="breadcrumb-item" *ngIf="selectedSurgery">
+      <!-- For OR Dashboard: Second level is Surgery Name (if selected) -->
+      <li class="breadcrumb-item" *ngIf="selectedSurgery && !isMaintenanceRoute">
         <a [routerLink]="['/dashboard']" [queryParams]="{ showFeatures: 'true', keepSurgeryContext: 'true' }">
           {{ selectedSurgery.name }}
         </a>
       </li>
       
-      <!-- Third level: Feature Name (if in a feature) -->
-      <li class="breadcrumb-item" *ngIf="currentFeature && currentFeature !== 'OR Dashboard'">
+      <!-- Feature level (third level for OR, second for maintenance) -->
+      <li class="breadcrumb-item" *ngIf="currentFeature && 
+          ((currentFeature !== 'OR Dashboard' && !isMaintenanceRoute) || 
+          (currentFeature !== 'Maintenance Dashboard' && isMaintenanceRoute))">
         <span>{{ currentFeature }}</span>
       </li>
     </ol>
